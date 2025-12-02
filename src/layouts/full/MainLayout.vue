@@ -1,0 +1,89 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import SidebarView from './sidebar/SidebarView.vue'
+import HeaderView from './header/HeaderView.vue'
+
+const drawer = ref()
+const innerW = window.innerWidth
+
+onMounted(() => {
+  if (innerW < 950) {
+    drawer.value = !drawer.value
+  }
+})
+</script>
+
+<template>
+  <v-app>
+    <!-- ---------------------------------------------- -->
+    <!--- Sidebar -->
+    <!-- ---------------------------------------------- -->
+    <v-navigation-drawer
+      left
+      :permanent="$vuetify.display.mdAndUp"
+    
+      app
+      :temporary="$vuetify.display.mdAndDown"
+      v-model="drawer"
+      expand-on-hover
+      class="side-bar bg-[#1e57a8]"
+    >
+      <SidebarView />
+    </v-navigation-drawer>
+
+    <!-- ---------------------------------------------- -->
+    <!--- Header -->
+    <!-- ---------------------------------------------- -->
+    <v-app-bar app flat elevation="0" class="pa-2 shadow-none border-none!">
+      <v-btn class="hidden-md-and-up" icon @click="drawer = !drawer">
+        <v-icon>fa-solid fa-bars</v-icon>
+      </v-btn>
+      <div class="logo pa-4">
+        <!-- <img src="/src/assets/images/white.png" class="" /> -->
+      </div>
+      <v-spacer></v-spacer>
+      <HeaderView />
+    </v-app-bar>
+    <!-- ---------------------------------------------- -->
+    <!--- Page Wrapper -->
+    <!-- ---------------------------------------------- -->
+    <v-main class="mt-4 page-wrapper">
+      <v-container fluid class="page-wrapper">
+        <slot />
+      </v-container>
+    </v-main>
+  </v-app>
+</template>
+
+<style scoped>
+.side-bar {
+  background-color: '#1e57a8';
+  overflow: hidden !important;
+}
+
+.side-bar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.page-wrapper {
+  background-color: #f5f7f9;
+}
+
+.settings-icon {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  font-size: 36px;
+  color: #121621;
+  animation: rotate 5s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
