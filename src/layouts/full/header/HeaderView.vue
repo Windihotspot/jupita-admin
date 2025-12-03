@@ -8,19 +8,36 @@ import { useRouter } from 'vue-router'
 
 <template>
   <div class="header items-center px-4 py-4 bg-white">
-    <!-- Icons (Right) -->
-     <div class="flex space-x-4">
-      <v-avatar size="36px">
-      <v-img
-        
-        alt="Avatar"
-        src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
-      ></v-img>
-     
-    </v-avatar>
-     <p class="m-1 text-sm">Williams</p>
-     </div>
-    
+      <el-dropdown >
+      <div
+        class="flex items-center bg-white shadow-sm px-3 py-2 rounded cursor-pointer"
+      >
+        <!-- Avatar -->
+        <img
+          src="https://avatars0.githubusercontent.com/u/9064066?v=4&s=460"
+          class="w-8 h-8 rounded-full object-cover"
+        />
+
+        <!-- Name -->
+        <span class="ml-2 text-sm font-medium text-gray-700 max-w-[80px] truncate">
+          Williams...
+        </span>
+
+        <!-- Arrow -->
+        <el-icon class="ml-1 text-gray-600" size="14">
+          <arrow-down />
+        </el-icon>
+      </div>
+
+      <!-- Dropdown Menu -->
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item command="profile">Profile</el-dropdown-item>
+          <el-dropdown-item divided command="logout">Logout</el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+
+    </el-dropdown>
   </div>
 </template>
 

@@ -26,7 +26,7 @@ onMounted(() => {
       :temporary="$vuetify.display.mdAndDown"
       v-model="drawer"
       expand-on-hover
-      class="side-bar bg-[#1e57a8]"
+        style="background-color:#1F5AA3;"
     >
       <SidebarView />
     </v-navigation-drawer>
@@ -39,6 +39,7 @@ onMounted(() => {
         <v-icon>fa-solid fa-bars</v-icon>
       </v-btn>
       <div class="logo pa-4">
+        
         <!-- <img src="/src/assets/images/white.png" class="" /> -->
       </div>
       <v-spacer></v-spacer>

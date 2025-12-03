@@ -1,17 +1,17 @@
 export default [
   {
     title: 'Dashboard',
-    icon: 'fa-solid fa-chart-area',
-    path: '/'
+    icon: '/src/assets/dashboard-icon.png',
+    path: '/dashboard'
   },
   {
     title: 'Tenants',
-    icon: 'fa-solid fa-chart-area',
-    path: '/'
+    icon: '/src/assets/fa-solid_users.png',
+    path: '/tenants'
   },
   {
     title: '  Settings',
-    icon: 'fa-solid fa-chart-area',
-    path: '/'
+    icon: '/src/assets/settings-icon.png',
+    path: '/settings'
   }
 ]

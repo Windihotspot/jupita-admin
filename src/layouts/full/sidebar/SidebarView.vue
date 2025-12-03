@@ -47,130 +47,82 @@ const logout = async () => {
 </script>
 
 <template>
-  <div class="side-bar bg-[#1e57a8]   d-flex flex-column h-full justify-between overflow-hidden">
-    <!-- Logo part -->
-    <!-- <div class="logo pa-4">
-      <img src="/src/assets/images/white.png" class="" />
-    </div> -->
+  <div class="h-full flex flex-col justify-between">
 
-    <!-- Navigation -->
-    <div class="flex-grow mt-4">
-      <v-list class="pa-4">
-        <template v-for="(item, i) in sidebarMenu" :key="i">
-          <v-list-item
-            @click="router.push(item.path)"
-            class="mb-4 pr-4 custom-btn no-uppercase relative"
-            size="small"
-            rounded="lg"
-            block
-            :class="{ 'custom-active': isActive(item.path) }"
-          >
-            <div class="flex items-center w-full">
-              <v-icon left>{{ item.icon }}</v-icon>
-              <span class="menu-item ml-4" v-text="item.title"></span>
-            </div>
-
-            <!-- Active bar INSIDE the v-list-item -->
-          </v-list-item>
-          <!-- <div v-if="isActive(item.path)" class="active-bar"></div> -->
-        </template>
-      </v-list>
+    <!-- Logo -->
+    <div class="p-2">
+      <img src="/src/assets/jupita-white-logo.png" alt="" />
     </div>
 
-    <!-- Footer Logout -->
-    <!-- <div class="pa-4">
-      <v-list-item @click="logout" class="custom-btn logout-btn" rounded="lg" block>
-        <v-icon class="text-lg" left>
-          <i class="fas fa-sign-out-alt"></i>
-        </v-icon>
-        <span class="menu-item ml-4">Logout</span>
-      </v-list-item>
+    <!-- Menu -->
+    <div class="flex-grow mt-2">
+      <div class="px-4">
+        <div
+          v-for="(item, i) in sidebarMenu"
+          :key="i"
+          @click="router.push(item.path)"
+          class="sidebar-item mb-3 cursor-pointer px-4 py-3 rounded-lg flex items-center relative transition"
+          :class="{ active: isActive(item.path) }"
+        >
+          <!-- Icon -->
+         <img :src="item.icon" class="w-5 h-5 object-contain" />
+
+
+          <!-- Title -->
+          <span class="ml-3 font-medium text-sm">
+            {{ item.title }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout -->
+    <!-- <div class="p-4">
+      <div
+        @click="logout"
+        class="sidebar-item cursor-pointer px-4 py-3 rounded-lg flex items-center transition"
+      >
+        <i class="fas fa-sign-out-alt text-lg"></i>
+        <span class="ml-3 font-medium text-sm">Logout</span>
+      </div>
     </div> -->
+
   </div>
 </template>
 
 <style scoped>
-
-.side-bar {
-  width: 250px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100vh;
+.sidebar-item {
+  color: white;
 }
 
-.logout-btn:hover {
-  background-color: #ffecec;
+/* Active state (white pill + blue icon/text) */
+.sidebar-item.active {
+  background: white;
 }
 
-.logo {
-  width: 50%;
-}
-.menu-item {
-  font-size: 36px;
-  text-transform: none;
-  color: #1e1e1e;
-}
-
-.custom-btn:hover {
-  background-color: #e8f0fe;
-}
-
-.custom-btn {
-  text-align: left;
-  justify-content: flex-start;
-  transition: background-color 0.2s ease;
-}
-.custom-btn .v-icon {
-  margin-right: 8px;
-  color: #1e1e1e;
-}
-.custom-btn .menu-item {
-  font-family:
-    'Inter',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Helvetica,
-    Arial,
-    sans-serif,
-    'Apple Color Emoji',
-    'Segoe UI Emoji';
-  font-style: normal;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 28px;
-}
-.custom-link {
-  text-decoration: none; /* Remove underline from Link */
-}
-
-.custom-active {
-  color: #1f5aa3 !important; /* Active state color */
-  background-color: rgba(0, 0, 255, 0.1); /* Light blue background */
-
-  border-radius: 12px;
-}
-
-.custom-active .menu-item {
+.sidebar-item.active i,
+.sidebar-item.active span {
   color: #1f5aa3 !important;
+  font-weight: 600;
 }
 
-.custom-active .v-icon {
-  color: #1f5aa3 !important;
+/* Default icon/text */
+.sidebar-item i,
+.sidebar-item span {
+  color: white;
+  transition: 0.25s;
 }
-.active-bar {
+
+/* Vertical bar */
+.sidebar-item.active::after {
+  content: "";
   position: absolute;
+  right: -12px;
   top: 50%;
-  right: 0;
   transform: translateY(-50%);
   width: 4px;
-  height: 40px; /* Adjust to match your button height */
-  background-color: #1f5aa3;
-  border-radius: 8px;
+  height: 40px;
+  background: white;
+  border-radius: 4px;
 }
 </style>
