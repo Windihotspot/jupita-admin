@@ -208,7 +208,6 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
         </div>
 
         <v-text-field
-          
           placeholder="Search for a tenant"
           density="compact"
           hide-details
@@ -272,20 +271,22 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
               </td>
 
               <td class="py-3 px-6 text-center">
-                <span
+                <router-link to="tenants-details">
+                  <span
                   class="bg-[#1f5aa3] text-white px-4 py-1 rounded hover:bg-blue-600 cursor-pointer"
                 >
                   View
                 </span>
+                </router-link>
+                
               </td>
             </tr>
           </tbody>
         </table>
-       <!-- Pagination Row -->
-<div class="flex items-center justify-between mt-4">
-
-  <!-- ITEMS PER PAGE (LEFT) -->
-  <!-- <v-select
+        <!-- Pagination Row -->
+        <div class="flex items-center justify-between mt-4">
+          <!-- ITEMS PER PAGE (LEFT) -->
+          <!-- <v-select
     v-model="itemsPerPage"
     :items="[5, 10, 15, 20]"
     label="Items per Page"
@@ -298,17 +299,15 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
     style="border-color:#1f5aa3;"
   ></v-select> -->
 
-  <!-- PAGINATION (RIGHT) -->
-  <!-- <v-pagination
+          <!-- PAGINATION (RIGHT) -->
+          <!-- <v-pagination
     v-model="currentPage"
     :length="pageCount"
     rounded="circle"
     color="#1f5aa3"
     class="pagination-custom"
   ></v-pagination> -->
-
-</div>
-
+        </div>
       </div>
 
       <div v-else class="fill-height align-center justify-center">
@@ -318,13 +317,19 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
         </div>
       </div>
     </div>
-    </MainLayout
-  >
+  </MainLayout>
 </template>
 
 <style scoped>
 .pagination-custom .v-pagination__item {
   border-radius: 50% !important;
 }
-
+.custom-btn {
+  background-color: #1f5aa3;
+  text-transform: none;
+  text-transform: none;
+}
+v-btn {
+  text-transform: none;
+}
 </style>
