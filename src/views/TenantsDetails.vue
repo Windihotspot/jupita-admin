@@ -95,14 +95,20 @@ const usageLogs = ref([
     <div class="p-6 space-y-6">
       <!-- HEADER -->
       <div class="bg-white p-6 rounded shadow flex justify-between items-center">
-        <div>
-          <h1 class="text-xl font-semibold">{{ tenant.name }}</h1>
-          <span class="px-3 py-1 bg-green-100 text-green-600 rounded text-sm">{{
+        <div class="flex justify-between gap-4">
+          <h1 class="text-md font-semibold">{{ tenant.name }}</h1>
+          <span class="px-3 py-1 bg-[#A2F8DE] text-green-600 rounded text-xs">{{
             tenant.status
           }}</span>
         </div>
 
-        <v-btn color="red" variant="flat" class="text-white">Deactivate Tenant</v-btn>
+        <v-btn size="small" color="red" variant="flat" class="text-white">
+  <template #prepend>
+    <i class="fas fa-lock text-white text-sm mr-2"></i>
+  </template>
+  Deactivate Tenant
+</v-btn>
+
       </div>
 
       <!-- DATE RANGE -->
@@ -114,11 +120,14 @@ const usageLogs = ref([
       </div>
 
       <!-- USAGE CARDS -->
-      <div class="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div
+       
+      <div class="bg-white p-4 rounded shadow ">
+        <h2 class="font-semibold mb-4 text-sm">Usage</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div
           v-for="(item, index) in usage"
           :key="index"
-          class="p-4 rounded border shadow-sm"
+          class="p-6 rounded  shadow-sm"
           :class="{
             'bg-blue-50 border-blue-300': index === 0,
             'bg-green-50 border-green-300': index === 1,
@@ -126,37 +135,47 @@ const usageLogs = ref([
             'bg-orange-50 border-orange-300': index === 3
           }"
         >
-          <div class="flex justify-between items-center">
-            <p class="font-medium">{{ item.title }}</p>
+          <div class="flex justify-between items-center mb-6">
+            <p class="font-medium text-xs">{{ item.title }}</p>
             <i class="fa fa-chevron-down text-xs"></i>
           </div>
-          <p class="text-3xl font-bold mt-2">{{ item.value }}</p>
+          <p class="text-md font-bold mt-2">{{ item.value }}</p>
         </div>
+        </div>
+      
       </div>
 
       <!-- ACCESS MANAGEMENT -->
       <div class="bg-white p-6 rounded shadow">
-        <h2 class="font-semibold mb-4">Access Management</h2>
+        <h2 class="font-semibold mb-4 tex-sm">Access Management</h2>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div
-            v-for="(item, index) in permissions"
-            :key="index"
-            class="flex justify-between items-center p-2"
-          >
-            <span>{{ item.name }}</span>
-            <v-switch color="green" density="compact" v-model="item.enabled"></v-switch>
-          </div>
-        </div>
+  <div
+    v-for="(item, index) in permissions"
+    :key="index"
+    class="flex items-center p-2 space-x-2"
+  >
+    <!-- Name -->
+    <span class="text-xs">{{ item.name }}</span>
+
+    <!-- Switch -->
+    <el-switch
+      v-model="item.enabled"
+      style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+    />
+  </div>
+</div>
+
+
       </div>
 
       <!-- TEAM MANAGEMENT -->
       <div class="bg-white p-6 rounded shadow">
-        <h2 class="font-semibold mb-4">Team Management</h2>
+        <h2 class="font-semibold mb-4 text-sm">Team Management</h2>
 
-        <table class="w-full text-sm">
+        <table class="w-full text-sm m-4">
           <thead>
-            <tr class="border-b text-gray-600">
+            <tr class="font-semibold">
               <th class="text-left py-2">Team Members</th>
               <th class="text-left">Status</th>
               <th class="text-left">Role</th>
@@ -166,7 +185,7 @@ const usageLogs = ref([
           </thead>
 
           <tbody>
-            <tr v-for="(member, index) in team" :key="index" class="border-b hover:bg-gray-50">
+            <tr v-for="(member, index) in team" :key="index" class="p-2 hover:bg-blue-50">
               <td class="py-2">{{ member.name }}</td>
               <td>
                 <span :class="member.status === 'Active' ? 'text-green-500' : 'text-red-500'">
@@ -175,9 +194,9 @@ const usageLogs = ref([
               </td>
               <td>{{ member.role }}</td>
               <td>{{ member.date }}</td>
-              <td class="text-center space-x-3">
-                <i class="fa fa-edit text-blue-500 cursor-pointer"></i>
-                <i class="fa fa-power-off text-green-500 cursor-pointer"></i>
+              <td class="text-center space-x-6">
+                <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
+                <i class="fa fa-play text-green-500 cursor-pointer"></i>
                 <i class="fa fa-trash text-red-500 cursor-pointer"></i>
               </td>
             </tr>
@@ -187,11 +206,11 @@ const usageLogs = ref([
 
       <!-- SUBSCRIPTION & BILLING MANAGEMENT -->
       <div class="bg-white p-6 rounded shadow mt-6">
-        <h2 class="font-semibold mb-4">Subscription and Billing Management</h2>
+        <h2 class="font-semibold mb-4 text-sm">Subscription and Billing Management</h2>
 
-        <table class="w-full text-sm">
+        <table class="w-full text-sm m-4">
           <thead>
-            <tr class="border-b text-gray-600">
+            <tr class="text-semibold">
               <th class="text-left py-2">Service</th>
               <th class="text-left">Unit Price</th>
               <th class="text-left">Action</th>
@@ -199,11 +218,11 @@ const usageLogs = ref([
           </thead>
 
           <tbody>
-            <tr v-for="(item, index) in billing" :key="index" class="border-b hover:bg-gray-50">
+            <tr v-for="(item, index) in billing" :key="index" class="p-2 hover:bg-blue-50">
               <td class="py-2">{{ item.service }}</td>
               <td>{{ item.price }}</td>
               <td>
-                <i class="fa fa-edit text-blue-500 cursor-pointer"></i>
+                <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
               </td>
             </tr>
           </tbody>
@@ -212,11 +231,11 @@ const usageLogs = ref([
 
       <!-- USAGE TABLE -->
       <div class="bg-white p-6 rounded shadow mt-6">
-        <h2 class="font-semibold mb-4">Usage</h2>
+        <h2 class="font-semibold mb-4 text-sm">Usage</h2>
 
-        <table class="w-full text-sm">
+        <table class="w-full text-sm m-4">
           <thead>
-            <tr class="border-b text-gray-600">
+            <tr class="text-semibold">
               <th class="text-left py-2">Date</th>
               <th class="text-left">Type</th>
               <th class="text-left">Amount</th>
@@ -225,7 +244,7 @@ const usageLogs = ref([
           </thead>
 
           <tbody>
-            <tr v-for="(u, index) in usageLogs" :key="index" class="border-b hover:bg-gray-50">
+            <tr v-for="(u, index) in usageLogs" :key="index" class="p-2 hover:bg-blue-50">
               <td class="py-2">{{ u.date }}</td>
               <td>{{ u.type }}</td>
               <td>{{ u.amount }}</td>
@@ -237,3 +256,11 @@ const usageLogs = ref([
     </div>
   </MainLayout>
 </template>
+
+
+
+<style scoped>
+.v-btn {
+  text-transform: none;
+}
+</style>

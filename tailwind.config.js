@@ -11,6 +11,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Sora", ...defaultTheme.fontFamily.sans],
+          inter: ['Inter', 'sans-serif'],
     },
       colors: {
         tomatoColor: '#ff6347' 

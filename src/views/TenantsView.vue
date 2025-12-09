@@ -2,7 +2,12 @@
 import { ref, computed } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 
-const statuses = ['All', 'Active', 'Inactive']
+const statuses = [
+  { value: 'All', label: 'All' },
+  { value: 'Active', label: 'Active' },
+  { value: 'Inactive', label: 'Inactive' }
+]
+
 const selectedStatus = ref('All')
 
 const itemsPerPage = ref(10)
@@ -167,8 +172,8 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
 </script>
 
 <template>
-  <MainLayout
-    ><div class="p-4 rounded shadow-sm bg-white m-4">
+  <MainLayout>
+    <div class="p-4 rounded shadow-sm bg-white m-4">
       <!-- Header with Title and Add Statement Button -->
       <div class="bg-white flex justify-between items-center border-b p-2">
         <div class="mb-2">
@@ -195,33 +200,36 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
           <!-- Filter Icon -->
           <i class="fa fa-filter"></i>
 
-          <v-select
-            color="#1f5aa3"
+          <el-select
             v-model="selectedStatus"
-            :items="statuses"
-            label="Status"
-            density="compact"
-            hide-details
-            variant="outlined"
-            class="w-32"
-          ></v-select>
-        </div>
+            placeholder="Status"
+            clearable
+              style="width: 120px"
+            size="large"
+          >
+            <el-option
+            
+              v-for="item in statuses"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
 
-        <v-text-field
-          placeholder="Search for a tenant"
-          density="compact"
-          hide-details
-          variant="outlined"
-          class="max-w-xs bg-gray-50"
-          label="Search"
-          color="#1f5aa3"
-          append-inner-icon=""
-        >
-          <!-- FontAwesome Search Icon inside append-inner slot -->
-          <template #append-inner>
-            <i class="fas fa-search text-[#1f5aa3]"></i>
-          </template>
-        </v-text-field>
+          <v-text-field
+  placeholder="Search by Tenant name"
+  density="compact"
+  hide-details
+  variant="outlined"
+  class="w-64"
+  
+ 
+   prepend-inner-icon="fa-solid fa-search text-gray text-sm"
+>
+
+</v-text-field>
+
+        </div>
       </div>
     </div>
 
@@ -273,12 +281,11 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
               <td class="py-3 px-6 text-center">
                 <router-link to="tenants-details">
                   <span
-                  class="bg-[#1f5aa3] text-white px-4 py-1 rounded hover:bg-blue-600 cursor-pointer"
-                >
-                  View
-                </span>
+                    class="bg-[#1f5aa3] text-white px-4 py-1 rounded hover:bg-blue-600 cursor-pointer"
+                  >
+                    View
+                  </span>
                 </router-link>
-                
               </td>
             </tr>
           </tbody>

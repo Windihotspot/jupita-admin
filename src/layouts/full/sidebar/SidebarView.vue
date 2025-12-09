@@ -65,7 +65,11 @@ const logout = async () => {
           :class="{ active: isActive(item.path) }"
         >
           <!-- Icon -->
-         <img :src="item.icon" class="w-5 h-5 object-contain" />
+         <img
+  :src="isActive(item.path) ? item.activeIcon : item.icon"
+  class="w-5 h-5 object-contain"
+/>
+
 
 
           <!-- Title -->

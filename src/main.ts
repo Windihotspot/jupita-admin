@@ -11,7 +11,7 @@ import AOS from 'aos'
 // Import Element Plus and its styles
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';
-
+import './assets/fonts.css'
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
