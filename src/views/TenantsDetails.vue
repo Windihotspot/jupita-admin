@@ -1,93 +1,79 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import ApiService from '@/services/api'
+import { useRoute } from 'vue-router'
+import moment from 'moment'
 
-// Dummy Data
-const tenant = ref({
-  name: 'Links Microfinance Bank',
-  status: 'Active',
-  startDate: 'Nov 16, 2020',
-  endDate: 'Dec 16, 2020'
-})
+const route = useRoute()
+const tenantId = ref(route.params.tenantId) // get tenant_id from route
+// Set date range to last 1 year
+const endDate = ref(moment().format('DD/MM/YYYY'))               // today
+const startDate = ref(moment().subtract(1, 'year').format('DD/MM/YYYY')) // 1 year ago
 
-const usage = ref([
-  { title: 'Originate', value: 2 },
-  { title: 'Credit Search', value: 2 },
-  { title: 'Analyze', value: 0 },
-  { title: 'Verify', value: 1 }
-])
+//const tenant = ref({})
+//const usage = ref([])
+//const billing = ref([])
+//const usageLogs = ref([])
+const loading = ref(false)
+const error = ref(null)
 
-const permissions = ref([
-  { name: 'Loan Origination', enabled: true },
-  { name: 'Client Management', enabled: true },
-  { name: 'Analyze', enabled: true },
-  { name: 'Create Loan', enabled: true },
-  { name: 'Credit Search', enabled: true },
-  { name: 'Decide', enabled: true },
-  { name: 'Logs', enabled: false },
-  { name: 'Id Verification', enabled: true }
-])
+ const tenant = ref({ name: 'Links Microfinance Bank', status: 'Active', startDate: 'Nov 16, 2020', endDate: 'Dec 16, 2020' })
+ const usage = ref([ { title: 'Originate', value: 2 }, { title: 'Credit Search', value: 2 }, { title: 'Analyze', value: 0 }, { title: 'Verify', value: 1 } ]) 
+ const permissions = ref([ { name: 'Loan Origination', enabled: true }, { name: 'Client Management', enabled: true }, { name: 'Analyze', enabled: true }, { name: 'Create Loan', enabled: true }, { name: 'Credit Search', enabled: true }, { name: 'Decide', enabled: true }, { name: 'Logs', enabled: false }, { name: 'Id Verification', enabled: true } ]) 
+ const team = ref([ { name: 'Adeyemi Williams', status: 'Active', role: 'Owner', date: '25/09/2025' }, { name: 'Jessica Ifunanya Izegbu', status: 'Active', role: 'Super Admin', date: '25/09/2025' }, { name: 'Purity Williams', status: 'Active', role: 'Admin', date: '25/09/2025' }, { name: 'William El-roi Williams', status: 'Inactive', role: 'Operator', date: '25/09/2025' } ]) 
+ const billing = ref([ { service: 'Loan Origination', price: '200.00' }, { service: 'BVN Liveliness Check', price: '100.00' }, { service: 'Bank Statement Analyzer (1 - 100 Pages)', price: '500.00' }, { service: 'Loan Recommendation', price: '20.00' }, { service: 'Credit Registry Full Report', price: '250.00' }, { service: 'CRC Full Report', price: '20.00' }, { service: 'First Central Full Report', price: '250.00' }, { service: 'BVN Check', price: '20.00' }, { service: 'NIN Check', price: '250.00' }, { service: 'Phone Number Check', price: '20.00' }, { service: 'Bank Statement Analyzer (101 - 500 Pages)', price: '250.00' } ]) 
+const usageLogs = ref([ { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' } ])
 
-const team = ref([
-  { name: 'Adeyemi Williams', status: 'Active', role: 'Owner', date: '25/09/2025' },
-  { name: 'Jessica Ifunanya Izegbu', status: 'Active', role: 'Super Admin', date: '25/09/2025' },
-  { name: 'Purity Williams', status: 'Active', role: 'Admin', date: '25/09/2025' },
-  { name: 'William El-roi Williams', status: 'Inactive', role: 'Operator', date: '25/09/2025' }
-])
+const fetchTenantDetails = async () => {
+  loading.value = true
+  error.value = null
 
-// Billing Table Dummy Data
-const billing = ref([
-  { service: 'Loan Origination', price: '200.00' },
-  { service: 'BVN Liveliness Check', price: '100.00' },
-  { service: 'Bank Statement Analyzer (1 - 100 Pages)', price: '500.00' },
-  { service: 'Loan Recommendation', price: '20.00' },
-  { service: 'Credit Registry Full Report', price: '250.00' },
-  { service: 'CRC Full Report', price: '20.00' },
-  { service: 'First Central Full Report', price: '250.00' },
-  { service: 'BVN Check', price: '20.00' },
-  { service: 'NIN Check', price: '250.00' },
-  { service: 'Phone Number Check', price: '20.00' },
-  { service: 'Bank Statement Analyzer (101 - 500 Pages)', price: '250.00' }
-])
-
-// Usage Logs
-const usageLogs = ref([
-  { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' },
-  {
-    date: '25/09/2025',
-    type: 'Bank Statement Analysis',
-    amount: '100.00',
-    user: 'Akinjo Folashade'
-  },
-  { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' },
-  {
-    date: '25/09/2025',
-    type: 'Bank Statement Analysis',
-    amount: '100.00',
-    user: 'Akinjo Folashade'
-  },
-  { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' },
-  {
-    date: '25/09/2025',
-    type: 'Bank Statement Analysis',
-    amount: '100.00',
-    user: 'Akinjo Folashade'
-  },
-  { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' },
-  {
-    date: '25/09/2025',
-    type: 'Bank Statement Analysis',
-    amount: '100.00',
-    user: 'Akinjo Folashade'
-  },
-  { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' },
-  {
-    date: '25/09/2025',
-    type: 'Bank Statement Analysis',
-    amount: '100.00',
-    user: 'Akinjo Folashade'
+  // Define params before API call
+  const params = {
+    tenant_id: tenantId.value,
+    start_date: startDate.value,
+    end_date: endDate.value
   }
-])
+
+  const token = localStorage.getItem('token') // log token
+
+  console.log("🔍 Fetch Tenant Details Payload:", params)
+  console.log("🔍 token:", token)
+
+  try {
+    const res = await ApiService.get('/get-tenant', {
+      params,
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    console.log("tenant-details response:", res)
+
+    const data = res.data.tenants.data[0] // Assuming single tenant returned
+    tenant.value = {
+      name: data.name,
+      status: data.activated === 1 ? 'Active' : 'Inactive',
+      startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
+      endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
+    }
+
+    // Map data if available
+    // usage.value = data.usage || []
+    // billing.value = data.billing || []
+    // usageLogs.value = data.usage_logs || []
+  } catch (err) {
+    console.log("error:", err.response.data.data.error)
+    error.value = err.response?.data?.message || 'Failed to load tenant details'
+  } finally {
+    loading.value = false
+  }
+}
+
+
+
+onMounted(fetchTenantDetails)
 </script>
 
 <template>
@@ -103,12 +89,11 @@ const usageLogs = ref([
         </div>
 
         <v-btn size="small" color="red" variant="flat" class="text-white">
-  <template #prepend>
-    <i class="fas fa-lock text-white text-sm mr-2"></i>
-  </template>
-  Deactivate Tenant
-</v-btn>
-
+          <template #prepend>
+            <i class="fas fa-lock text-white text-sm mr-2"></i>
+          </template>
+          Deactivate Tenant
+        </v-btn>
       </div>
 
       <!-- DATE RANGE -->
@@ -120,29 +105,28 @@ const usageLogs = ref([
       </div>
 
       <!-- USAGE CARDS -->
-       
-      <div class="bg-white p-4 rounded shadow ">
+
+      <div class="bg-white p-4 rounded shadow">
         <h2 class="font-semibold mb-4 text-sm">Usage</h2>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div
-          v-for="(item, index) in usage"
-          :key="index"
-          class="p-6 rounded  shadow-sm"
-          :class="{
-            'bg-blue-50 border-blue-300': index === 0,
-            'bg-green-50 border-green-300': index === 1,
-            'bg-pink-50 border-pink-300': index === 2,
-            'bg-orange-50 border-orange-300': index === 3
-          }"
-        >
-          <div class="flex justify-between items-center mb-6">
-            <p class="font-medium text-xs">{{ item.title }}</p>
-            <i class="fa fa-chevron-down text-xs"></i>
+          <div
+            v-for="(item, index) in usage"
+            :key="index"
+            class="p-6 rounded shadow-sm"
+            :class="{
+              'bg-blue-50 border-blue-300': index === 0,
+              'bg-green-50 border-green-300': index === 1,
+              'bg-pink-50 border-pink-300': index === 2,
+              'bg-orange-50 border-orange-300': index === 3
+            }"
+          >
+            <div class="flex justify-between items-center mb-6">
+              <p class="font-medium text-xs">{{ item.title }}</p>
+              <i class="fa fa-chevron-down text-xs"></i>
+            </div>
+            <p class="text-md font-bold mt-2">{{ item.value }}</p>
           </div>
-          <p class="text-md font-bold mt-2">{{ item.value }}</p>
         </div>
-        </div>
-      
       </div>
 
       <!-- ACCESS MANAGEMENT -->
@@ -150,23 +134,21 @@ const usageLogs = ref([
         <h2 class="font-semibold mb-4 tex-sm">Access Management</h2>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-  <div
-    v-for="(item, index) in permissions"
-    :key="index"
-    class="flex items-center p-2 space-x-2"
-  >
-    <!-- Name -->
-    <span class="text-xs">{{ item.name }}</span>
+          <div
+            v-for="(item, index) in permissions"
+            :key="index"
+            class="flex items-center p-2 space-x-2"
+          >
+            <!-- Name -->
+            <span class="text-xs">{{ item.name }}</span>
 
-    <!-- Switch -->
-    <el-switch
-      v-model="item.enabled"
-      style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
-    />
-  </div>
-</div>
-
-
+            <!-- Switch -->
+            <el-switch
+              v-model="item.enabled"
+              style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+            />
+          </div>
+        </div>
       </div>
 
       <!-- TEAM MANAGEMENT -->
@@ -256,8 +238,6 @@ const usageLogs = ref([
     </div>
   </MainLayout>
 </template>
-
-
 
 <style scoped>
 .v-btn {

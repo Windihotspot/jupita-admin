@@ -2,7 +2,7 @@ import '@/scss/style.scss'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-
+import { useAuthStore } from "@/stores/auth";
 import App from './App.vue'
 import router from './router'
 import 'aos/dist/aos.css'
@@ -41,6 +41,9 @@ app.use(router)
 app.use(vuetify)
 app.use(VueApexCharts)
 app.use(ElementPlus);
+
+// hydrate auth on refresh
+useAuthStore().hydrate();
 
 const urlParams = new URLSearchParams(window.location.search)
 const redirectPath = urlParams.get('redirect')

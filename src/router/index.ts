@@ -24,16 +24,16 @@ const router = createRouter({
       component: TenantsView
     },
     {
-      path: '/tenants-details',
+      path: '/tenants-details/:tenantId',
       name: 'tenants-details',
-      component: TenantsDetails
+      component: TenantsDetails,
+      props: true // <-- enables passing tenantId as a prop
     },
     {
       path: '/settings',
       name: 'settings',
       component: SettingsView
-    },
-    
+    }
   ]
 })
 

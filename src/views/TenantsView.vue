@@ -1,174 +1,77 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
+import ApiService from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+import LoadingOverlay from '@/components/LoadingOverlay.vue'
+import moment from 'moment'
+const auth = useAuthStore()
 
+const tenants = ref([])
+const loading = ref(false)
+const error = ref(null)
+
+// FILTER OPTIONS
 const statuses = [
-  { value: 'All', label: 'All' },
-  { value: 'Active', label: 'Active' },
-  { value: 'Inactive', label: 'Inactive' }
+  { label: 'All', value: 'All' },
+  { label: 'Active', value: 'Active' },
+  { label: 'Inactive', value: 'Inactive' }
 ]
 
 const selectedStatus = ref('All')
-
 const itemsPerPage = ref(10)
 const currentPage = ref(1)
 
-const tenants = ref([
-  // 30 dummy Nigerian football legends
-  {
-    id: 1,
-    created_at: '2024-01-10',
-    tenant_id: 'TEN001',
-    name: 'Jay-Jay Okocha',
-    status: 'Active'
-  },
-  { id: 2, created_at: '2024-02-12', tenant_id: 'TEN002', name: 'Nwankwo Kanu', status: 'Active' },
-  {
-    id: 3,
-    created_at: '2024-03-15',
-    tenant_id: 'TEN003',
-    name: 'Rashidi Yekini',
-    status: 'Inactive'
-  },
-  { id: 4, created_at: '2024-01-22', tenant_id: 'TEN004', name: 'Finidi George', status: 'Active' },
-  {
-    id: 5,
-    created_at: '2024-03-03',
-    tenant_id: 'TEN005',
-    name: 'Daniel Amokachi',
-    status: 'Active'
-  },
-  { id: 6, created_at: '2024-04-10', tenant_id: 'TEN006', name: 'Taribo West', status: 'Inactive' },
-  { id: 7, created_at: '2024-05-01', tenant_id: 'TEN007', name: 'Sunday Oliseh', status: 'Active' },
-  { id: 8, created_at: '2024-02-20', tenant_id: 'TEN008', name: 'Victor Ikpeba', status: 'Active' },
-  {
-    id: 9,
-    created_at: '2024-03-09',
-    tenant_id: 'TEN009',
-    name: 'Celestine Babayaro',
-    status: 'Inactive'
-  },
-  {
-    id: 10,
-    created_at: '2024-06-12',
-    tenant_id: 'TEN010',
-    name: 'Mutiu Adepoju',
-    status: 'Active'
-  },
-  {
-    id: 11,
-    created_at: '2024-01-14',
-    tenant_id: 'TEN011',
-    name: 'Stephen Keshi',
-    status: 'Inactive'
-  },
-  { id: 12, created_at: '2024-02-16', tenant_id: 'TEN012', name: 'Peter Rufai', status: 'Active' },
-  { id: 13, created_at: '2024-03-18', tenant_id: 'TEN013', name: 'Joseph Yobo', status: 'Active' },
-  {
-    id: 14,
-    created_at: '2024-04-20',
-    tenant_id: 'TEN014',
-    name: 'Austin Eguavoen',
-    status: 'Inactive'
-  },
-  {
-    id: 15,
-    created_at: '2024-05-15',
-    tenant_id: 'TEN015',
-    name: 'Daniel Shittu',
-    status: 'Active'
-  },
-  {
-    id: 16,
-    created_at: '2024-06-10',
-    tenant_id: 'TEN016',
-    name: 'Yakubu Aiyegbeni',
-    status: 'Active'
-  },
-  {
-    id: 17,
-    created_at: '2024-01-30',
-    tenant_id: 'TEN017',
-    name: 'Obafemi Martins',
-    status: 'Inactive'
-  },
-  { id: 18, created_at: '2024-02-27', tenant_id: 'TEN018', name: 'Ike Shorunmu', status: 'Active' },
-  {
-    id: 19,
-    created_at: '2024-03-21',
-    tenant_id: 'TEN019',
-    name: 'Emmanuel Amunike',
-    status: 'Active'
-  },
-  {
-    id: 20,
-    created_at: '2024-04-25',
-    tenant_id: 'TEN020',
-    name: 'Segun Odegbami',
-    status: 'Inactive'
-  },
-  { id: 21, created_at: '2024-05-29', tenant_id: 'TEN021', name: 'Alloy Agu', status: 'Active' },
-  {
-    id: 22,
-    created_at: '2024-02-13',
-    tenant_id: 'TEN022',
-    name: 'Samson Siasia',
-    status: 'Inactive'
-  },
-  {
-    id: 23,
-    created_at: '2024-03-11',
-    tenant_id: 'TEN023',
-    name: 'Uche Okechukwu',
-    status: 'Active'
-  },
-  { id: 24, created_at: '2024-04-14', tenant_id: 'TEN024', name: 'Garba Lawal', status: 'Active' },
-  {
-    id: 25,
-    created_at: '2024-06-11',
-    tenant_id: 'TEN025',
-    name: 'Wilson Oruma',
-    status: 'Inactive'
-  },
-  { id: 26, created_at: '2024-01-18', tenant_id: 'TEN026', name: 'Sani Kaita', status: 'Active' },
-  {
-    id: 27,
-    created_at: '2024-02-17',
-    tenant_id: 'TEN027',
-    name: 'Sam Okwaraji',
-    status: 'Inactive'
-  },
-  {
-    id: 28,
-    created_at: '2024-03-26',
-    tenant_id: 'TEN028',
-    name: 'Thompson Usiyan',
-    status: 'Active'
-  },
-  { id: 29, created_at: '2024-04-28', tenant_id: 'TEN029', name: 'Dosu Joseph', status: 'Active' },
-  {
-    id: 30,
-    created_at: '2024-05-30',
-    tenant_id: 'TEN030',
-    name: 'Stephen Odegbami',
-    status: 'Inactive'
-  }
-])
+// 🔥 FETCH TENANTS FUNCTION
+const fetchTenants = async () => {
+  loading.value = true
+  error.value = null
 
-// FILTERED LIST
+  try {
+    const response = await ApiService.get('/fetch-tenants', {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+
+    console.log('🔥 TENANTS API RAW:', response)
+
+    const res = response.data // the real data
+    tenants.value = res.tenants.data // <---- 🔥🔥 correct location
+
+    console.log('📌 TENANTS LOADED:', tenants.value)
+  } catch (err) {
+    console.log(err)
+    error.value = err.response?.data?.message || 'Failed to load tenants'
+  } finally {
+    loading.value = false
+  }
+}
+
+// RUN ON PAGE LOAD
+onMounted(() => {
+  fetchTenants()
+})
+
+const formatDate = (dateStr) => {
+  return moment(dateStr).format('DD MMM YYYY, hh:mm A') // Example: 10 Jul 2025, 10:40 AM
+}
+
+// FILTER SYSTEM
 const filteredTenants = computed(() => {
   if (selectedStatus.value === 'All') return tenants.value
-  return tenants.value.filter((t) => t.status === selectedStatus.value)
+  return tenants.value.filter(
+    (t) =>
+      (t.activated === 1 && selectedStatus.value === 'Active') ||
+      (t.activated === 0 && selectedStatus.value === 'Inactive')
+  )
 })
 
-// PAGINATION LOGIC
+// PAGINATION
 const paginatedTenants = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredTenants.value.slice(start, end)
+  return filteredTenants.value.slice(start, start + itemsPerPage.value)
 })
-
-const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsPerPage.value))
 </script>
 
 <template>
@@ -204,11 +107,10 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
             v-model="selectedStatus"
             placeholder="Status"
             clearable
-              style="width: 120px"
+            style="width: 120px"
             size="large"
           >
             <el-option
-            
               v-for="item in statuses"
               :key="item.value"
               :label="item.label"
@@ -217,27 +119,25 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
           </el-select>
 
           <v-text-field
-  placeholder="Search by Tenant name"
-  density="compact"
-  hide-details
-  variant="outlined"
-  class="w-64"
-  
- 
-   prepend-inner-icon="fa-solid fa-search text-gray text-sm"
->
-
-</v-text-field>
-
+            placeholder="Search by Tenant name"
+            density="compact"
+            hide-details
+            variant="outlined"
+            class="w-64"
+            prepend-inner-icon="fa-solid fa-search text-gray text-sm"
+          >
+          </v-text-field>
         </div>
       </div>
     </div>
 
-    <div class="p-4">
-      <!-- <div v-if="isLoading" class="flex flex-col items-center justify-center min-h-[200px]">
+     <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
     
-         <LoadingOverlay :visible="isLoading" message="Loading statements..." />
-      </div> -->
+         <LoadingOverlay :visible="loading" message="Loading tenants..." />
+      </div>
+
+    <div v-else class="p-4">
+     
 
       <div v-if="tenants.length > 0" class="overflow-x-auto">
         <table class="min-w-full">
@@ -262,30 +162,32 @@ const pageCount = computed(() => Math.ceil(filteredTenants.value.length / itemsP
                 {{ (currentPage - 1) * itemsPerPage + index + 1 }}
               </td>
 
-              <td class="py-3 px-6">{{ tenant.created_at }}</td>
+              <td class="py-3 px-6">{{formatDate(tenant.created_at) }}</td>
               <td class="py-3 px-6">{{ tenant.tenant_id }}</td>
               <td class="py-3 px-6">{{ tenant.name }}</td>
 
               <td class="py-3 px-6">
                 <span
                   :class="
-                    tenant.status === 'Active'
-                      ? 'text-green-600 py-1 px-2 text-xs font-semibold rounded-full bg-green-100'
-                      : 'text-red-600 py-1 px-2 text-xs font-semibold rounded-full bg-red-100'
+                    tenant.activated === 1
+                      ? 'text-green-600 bg-green-100'
+                      : 'text-red-600 bg-red-100'
                   "
+                  class="py-1 px-2 text-xs font-semibold rounded-full"
                 >
-                  {{ tenant.status }}
+                  {{ tenant.activated === 1 ? 'Active' : 'Inactive' }}
                 </span>
               </td>
 
               <td class="py-3 px-6 text-center">
-                <router-link to="tenants-details">
-                  <span
-                    class="bg-[#1f5aa3] text-white px-4 py-1 rounded hover:bg-blue-600 cursor-pointer"
-                  >
-                    View
-                  </span>
-                </router-link>
+                <router-link 
+  :to="{ name: 'tenants-details', params: { tenantId: tenant.tenant_id } }"
+>
+  <span class="bg-[#1f5aa3] text-white px-4 py-1 rounded hover:bg-blue-600 cursor-pointer">
+    View
+  </span>
+</router-link>
+
               </td>
             </tr>
           </tbody>
