@@ -4,7 +4,7 @@ import { ref, onMounted, watch } from 'vue'
 import ApiService from '@/services/api'
 import { useRoute } from 'vue-router'
 import moment from 'moment'
-
+import LoadingOverlay from '@/components/LoadingOverlay.vue'
 const route = useRoute()
 const tenantId = ref(route.params.tenantId) // get tenant_id from route
 // Set date range to last 1 year
@@ -18,53 +18,80 @@ const startDate = ref(moment().subtract(1, 'year').format('DD/MM/YYYY')) // 1 ye
 const loading = ref(false)
 const error = ref(null)
 
- const tenant = ref({ name: 'Links Microfinance Bank', status: 'Active', startDate: 'Nov 16, 2020', endDate: 'Dec 16, 2020' })
- const usage = ref([ { title: 'Originate', value: 2 }, { title: 'Credit Search', value: 2 }, { title: 'Analyze', value: 0 }, { title: 'Verify', value: 1 } ]) 
- const permissions = ref([ { name: 'Loan Origination', enabled: true }, { name: 'Client Management', enabled: true }, { name: 'Analyze', enabled: true }, { name: 'Create Loan', enabled: true }, { name: 'Credit Search', enabled: true }, { name: 'Decide', enabled: true }, { name: 'Logs', enabled: false }, { name: 'Id Verification', enabled: true } ]) 
- const team = ref([ { name: 'Adeyemi Williams', status: 'Active', role: 'Owner', date: '25/09/2025' }, { name: 'Jessica Ifunanya Izegbu', status: 'Active', role: 'Super Admin', date: '25/09/2025' }, { name: 'Purity Williams', status: 'Active', role: 'Admin', date: '25/09/2025' }, { name: 'William El-roi Williams', status: 'Inactive', role: 'Operator', date: '25/09/2025' } ]) 
- const billing = ref([ { service: 'Loan Origination', price: '200.00' }, { service: 'BVN Liveliness Check', price: '100.00' }, { service: 'Bank Statement Analyzer (1 - 100 Pages)', price: '500.00' }, { service: 'Loan Recommendation', price: '20.00' }, { service: 'Credit Registry Full Report', price: '250.00' }, { service: 'CRC Full Report', price: '20.00' }, { service: 'First Central Full Report', price: '250.00' }, { service: 'BVN Check', price: '20.00' }, { service: 'NIN Check', price: '250.00' }, { service: 'Phone Number Check', price: '20.00' }, { service: 'Bank Statement Analyzer (101 - 500 Pages)', price: '250.00' } ]) 
-const usageLogs = ref([ { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'BVN Liveliness Check', amount: '500.00', user: 'Akinjo Folashade' }, { date: '25/09/2025', type: 'Bank Statement Analysis', amount: '100.00', user: 'Akinjo Folashade' } ])
-
+const tenant = ref({})
+const usage = ref([])
+const permissions = ref([])
+const team = ref([])
+const billing = ref([])
+const usageLogs = ref([])
 const fetchTenantDetails = async () => {
   loading.value = true
   error.value = null
 
-  // Define params before API call
   const params = {
     tenant_id: tenantId.value,
     start_date: startDate.value,
     end_date: endDate.value
   }
 
-  const token = localStorage.getItem('token') // log token
+  const token = localStorage.getItem('token')
 
   console.log("🔍 Fetch Tenant Details Payload:", params)
-  console.log("🔍 token:", token)
 
   try {
     const res = await ApiService.get('/get-tenant', {
       params,
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` }
     })
 
-    console.log("tenant-details response:", res)
+    const data = res.data
 
-    const data = res.data.tenants.data[0] // Assuming single tenant returned
+    // Tenant info
     tenant.value = {
-      name: data.name,
-      status: data.activated === 1 ? 'Active' : 'Inactive',
+      name: data.user.fullname || `${data.user.firstname} ${data.user.lastname}`,
+      status: data.user.status === 1 ? 'Active' : 'Inactive',
       startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
       endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
     }
 
-    // Map data if available
-    // usage.value = data.usage || []
-    // billing.value = data.billing || []
-    // usageLogs.value = data.usage_logs || []
+    // Usage cards (map analysis, loans, id_verification, credit_history)
+    usage.value = [
+      { title: 'Analysis', value: data.analysis.reduce((acc, i) => acc + i.count, 0) },
+      { title: 'Loans', value: data.loans.reduce((acc, i) => acc + i.count, 0) },
+      { title: 'ID Verification', value: data.id_verification.reduce((acc, i) => acc + i.count, 0) },
+      { title: 'Credit History', value: data.credit_history.reduce((acc, i) => acc + i.count, 0) }
+    ]
+
+    // Permissions / access management
+    permissions.value = data.tenant_products.map(p => ({
+      name: p.name,
+      enabled: true // default, or map from API if available
+    }))
+
+    // Team management
+    team.value = data.team.map(member => ({
+      name: member.name,
+      status: member.active === 1 ? 'Active' : 'Inactive',
+      role: member.title,
+      date: moment(member.created_at).format('DD MMM YYYY')
+    }))
+
+    // Billing / subscription
+    billing.value = data.tenant_product_price.map(item => ({
+      service: item.name,
+      price: item.product_price
+    }))
+
+    // Usage logs (transactions)
+    usageLogs.value = data.transactions.data.map(t => ({
+      date: moment(t.created_at).format('DD MMM YYYY'),
+      type: t.description,
+      amount: t.amount,
+      user: tenant.value.name
+    }))
+
   } catch (err) {
-    console.log("error:", err.response.data.data.error)
+    console.error("Error fetching tenant details:", err)
     error.value = err.response?.data?.message || 'Failed to load tenant details'
   } finally {
     loading.value = false
@@ -78,7 +105,11 @@ onMounted(fetchTenantDetails)
 
 <template>
   <MainLayout>
-    <div class="p-6 space-y-6">
+     <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
+    
+         <LoadingOverlay :visible="loading" message="Loading data..." />
+      </div>
+    <div v-else class="p-6 space-y-6">
       <!-- HEADER -->
       <div class="bg-white p-6 rounded shadow flex justify-between items-center">
         <div class="flex justify-between gap-4">
@@ -236,6 +267,8 @@ onMounted(fetchTenantDetails)
         </table>
       </div>
     </div>
+
+
   </MainLayout>
 </template>
 

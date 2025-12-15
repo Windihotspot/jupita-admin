@@ -23,10 +23,7 @@ import { useRouter } from 'vue-router'
           Williams...
         </span>
 
-        <!-- Arrow -->
-        <el-icon class="ml-1 text-gray-600" size="14">
-          <arrow-down />
-        </el-icon>
+        
       </div>
 
       <!-- Dropdown Menu -->
