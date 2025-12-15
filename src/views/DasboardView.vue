@@ -15,19 +15,31 @@
       </div>
       <div v-else>
         <div class="m-4">
-        <i class="fa-solid fa-filter pr-4"></i>
+      
 
         <!-- Date Filter -->
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          unlink-panels
-          range-separator="To"
-          start-placeholder="Start date"
-          end-placeholder="End date"
-          :shortcuts="shortcuts"
-          @change="fetchDashboardData" 
-        />
+        <div class="m-4 flex items-center gap-4">
+  <i class="fa-solid fa-filter pr-4"></i>
+
+  <!-- Start Date -->
+  <el-date-picker
+    v-model="startDate"
+    type="date"
+    placeholder="Start date"
+    :default-value="null"
+    @change="fetchDashboardData"
+  />
+
+  <!-- End Date -->
+  <el-date-picker
+    v-model="endDate"
+    type="date"
+    placeholder="End date"
+    :default-value="null"
+    @change="fetchDashboardData"
+  />
+</div>
+
       </div>
     </div>
 
@@ -113,11 +125,11 @@ const shortcuts = [
 const startDate = ref("")
 const endDate = ref("")
 
-watch(dateRange, () => {
-  if (!dateRange.value[0] || !dateRange.value[1]) return
-  startDate.value = moment(dateRange.value[0]).format("DD/MM/YYYY")
-  endDate.value = moment(dateRange.value[1]).format("DD/MM/YYYY")
-}, { immediate: false })
+// watch(dateRange, () => {
+//   if (!dateRange.value[0] || !dateRange.value[1]) return
+//   startDate.value = moment(dateRange.value[0]).format("DD/MM/YYYY")
+//   endDate.value = moment(dateRange.value[1]).format("DD/MM/YYYY")
+// }, { immediate: false })
 
 // ───────────────────────────────
 // DASHBOARD STATE
@@ -131,9 +143,32 @@ const stats = reactive({
 
 const chartOptions = reactive({
   chart: { id: 'dashboard-chart' },
-  xaxis: { categories: [] },
-  dataLabels: { enabled: false },
-  colors: ['#1e40af']
+  colors: ['#1e40af'],
+  plotOptions: {
+    bar: {
+      columnWidth: '10%', // thinner bars
+      distributed: false
+    }
+  },
+  dataLabels: {
+    enabled: true,
+    position: 'top',   // show count on top of bars
+    style: {
+      fontSize: '12px',
+      colors: ['#000']
+    }
+  },
+  xaxis: {
+    categories: [],     // your business names
+   
+   
+  },
+  yaxis: {
+    show: false        // hide the y-axis labels
+  },
+  grid: {
+    yaxis: { lines: { show: false } }  // optional: remove horizontal grid lines
+  }
 })
 
 const chartSeries = reactive([
@@ -162,13 +197,16 @@ const fetchDashboardData = async () => {
   if (!startDate.value || !endDate.value) return
 
   loading.value = true
-  try {
-    const res = await ApiService.post('/filter-dashboard-data-by-date', {
-      start_date: startDate.value,
-      end_date: endDate.value
-    })
+  const payload = {
+    start_date: moment(startDate.value).format('DD/MM/YYYY'),
+    end_date: moment(endDate.value).format('DD/MM/YYYY')
+  }
+  console.log('dashboard data by date payload:', payload)
 
-    const d = res.data.data
+  try {
+    const res = await ApiService.post('/filter-dashboard-data-by-date', payload)
+    console.log('dashboard data by date response:', res)
+    const d = res.data
 
     stats.total = d.tenants
     stats.active = d.active_tenants
@@ -184,12 +222,12 @@ const fetchDashboardData = async () => {
 
     chartOptions.xaxis.categories = merged.map(i => i.business_name)
     chartSeries[0].data = merged.map(i => i.count)
-
   } catch (err) {
-    console.log("Dashboard fetch error:", err)
+    console.log('Dashboard fetch error:', err)
   } finally {
     loading.value = false
   }
 }
+
 
 </script>
