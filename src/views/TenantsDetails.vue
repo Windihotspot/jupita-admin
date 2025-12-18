@@ -1,20 +1,17 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import ApiService from '@/services/api'
 import { useRoute } from 'vue-router'
+import { ElNotification } from 'element-plus'
 import moment from 'moment'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 const route = useRoute()
-const tenantId = ref(route.params.tenantId) // get tenant_id from route
+const tenantId = ref(route.params.tenantId) 
 // Set date range to last 1 year
-const endDate = ref(moment().format('DD/MM/YYYY'))               // today
-const startDate = ref(moment().subtract(1, 'year').format('DD/MM/YYYY')) // 1 year ago
+const endDate = ref(moment().format('DD/MM/YYYY'))
+const startDate = ref(moment().subtract(1, 'year').format('DD/MM/YYYY'))
 
-//const tenant = ref({})
-//const usage = ref([])
-//const billing = ref([])
-//const usageLogs = ref([])
 const loading = ref(false)
 const error = ref(null)
 
@@ -52,7 +49,7 @@ const fetchTenantDetails = async () => {
 const superAdmin = data.team.find(member => member.title.toLowerCase() === 'super_admin');
 tenant.value = {
   name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
-  status: data.user.status === 1 ? 'Active' : 'Inactive',
+  status: superAdmin ? superAdmin.active : 0,
   startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
   endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
 };
@@ -102,7 +99,47 @@ tenant.value = {
   }
 }
 
+const toggleTenantStatus = async () => {
+  const token = localStorage.getItem('token')
 
+
+  const newApiStatus = tenant.value.status === 1 ? 'deactivate' : 'activate'
+
+  const payload = {
+    tenant_id: tenantId.value,
+    status: 'activate'
+  }
+
+  console.log('🔹 PUT /update-tenant-status Request Payload:', payload)
+
+  try {
+    const res = await ApiService.put('/update-tenant-status', payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    console.log('🔹 PUT /update-tenant-status Response:', res.data)
+
+    ElNotification({
+      
+      message: `Tenant ${newApiStatus === 'activate' ? 'activated' : 'deactivated'} successfully`,
+      type: 'success',
+      duration: 3000
+    })
+
+    // Refresh tenant details after update
+    fetchTenantDetails()
+
+  } catch (err) {
+    console.error('Error updating tenant status:', err)
+    
+    ElNotification({
+      title: 'Error',
+      message: err.response?.data?.message || 'Failed to update tenant status',
+      type: 'error',
+      duration: 3000
+    })
+  }
+}
 
 onMounted(fetchTenantDetails)
 </script>
@@ -118,17 +155,34 @@ onMounted(fetchTenantDetails)
       <div class="bg-white p-6 rounded shadow flex justify-between items-center">
         <div class="flex justify-between gap-4">
           <h1 class="text-md font-semibold">{{ tenant.name }}</h1>
-          <span class="px-3 py-1 bg-[#A2F8DE] text-green-600 rounded text-xs">{{
-            tenant.status
-          }}</span>
+        <span
+  class="px-3 py-1 rounded text-xs"
+  :class="tenant.status === 1
+    ? 'bg-[#A2F8DE] text-green-600'
+    : 'bg-red-100 text-red-600'"
+>
+  {{ tenant.status === 1 ? 'Active' : 'Inactive' }}
+</span>
+
         </div>
 
-        <v-btn size="small" color="red" variant="flat" class="text-white">
-          <template #prepend>
-            <i class="fas fa-lock text-white text-sm mr-2"></i>
-          </template>
-          Deactivate Tenant
-        </v-btn>
+     <v-btn
+  size="small"
+  :color="tenant.status === 1 ? 'red' : 'green'"
+  variant="flat"
+  class="text-white"
+  @click="toggleTenantStatus"
+>
+  <template #prepend>
+    <i
+      :class="tenant.status === 1 ? 'fas fa-lock' : 'fas fa-unlock'"
+      class="text-white text-sm mr-2"
+    ></i>
+  </template>
+  {{ tenant.status === 1 ? 'Deactivate Tenant' : 'Activate Tenant' }}
+</v-btn>
+
+
       </div>
 
       <!-- DATE RANGE -->

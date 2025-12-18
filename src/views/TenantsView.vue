@@ -160,7 +160,7 @@ const paginatedTenants = computed(() => {
   <v-card class="rounded-sm px-6 py-6 relative">
     <!-- CLOSE ICON -->
     <button
-      class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+      class="absolute top-4 right-4 text-gray-400 hover:text-red-600"
       @click="showCreateDialog = false"
     >
       ✕

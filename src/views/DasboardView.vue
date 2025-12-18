@@ -172,7 +172,7 @@ const chartOptions = reactive({
     style: { fontSize: '12px', colors: ['#000'] }
   },
   xaxis: { categories: [] },
-  yaxis: { show: false },
+  yaxis: { show: true },
   grid: { yaxis: { lines: { show: false } } }
 })
 
