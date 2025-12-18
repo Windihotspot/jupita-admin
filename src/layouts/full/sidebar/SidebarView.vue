@@ -55,7 +55,7 @@ const logout = async () => {
     </div>
 
     <!-- Menu -->
-    <div class="flex-grow mt-2">
+    <div class="flex-grow m-2">
       <div class="px-4">
         <div
           v-for="(item, i) in sidebarMenu"

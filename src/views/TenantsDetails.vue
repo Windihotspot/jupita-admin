@@ -45,14 +45,18 @@ const fetchTenantDetails = async () => {
     })
 
     const data = res.data
+    console.log("tenant details data:", data)
 
+    
     // Tenant info
-    tenant.value = {
-      name: data.user.fullname || `${data.user.firstname} ${data.user.lastname}`,
-      status: data.user.status === 1 ? 'Active' : 'Inactive',
-      startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
-      endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
-    }
+const superAdmin = data.team.find(member => member.title.toLowerCase() === 'super_admin');
+tenant.value = {
+  name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
+  status: data.user.status === 1 ? 'Active' : 'Inactive',
+  startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
+  endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
+};
+
 
     // Usage cards (map analysis, loans, id_verification, credit_history)
     usage.value = [
@@ -71,7 +75,7 @@ const fetchTenantDetails = async () => {
     // Team management
     team.value = data.team.map(member => ({
       name: member.name,
-      status: member.active === 1 ? 'Active' : 'Inactive',
+       status: superAdmin ? superAdmin.active === 1 ? 'Active' : 'Inactive' : null ,
       role: member.title,
       date: moment(member.created_at).format('DD MMM YYYY')
     }))

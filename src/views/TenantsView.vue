@@ -48,6 +48,87 @@ const fetchTenants = async () => {
   }
 }
 
+// ADD NEW TENANT DIALOG
+const showCreateDialog = ref(false)
+const createLoading = ref(false)
+const createError = ref(null)
+
+const createFormRef = ref(null)
+
+const newTenant = ref({
+  company_name: '',
+  registration_number: '',
+  phone: '',
+  email: '',
+  address: '',
+  password: ''
+})
+
+// VALIDATION RULES
+const rules = {
+  required: (v) => !!v || 'This field is required',
+  email: (v) =>
+    !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Invalid email address',
+  phone: (v) =>
+    !v || /^[0-9+\-\s]{7,15}$/.test(v) || 'Invalid phone number',
+
+    password: (v) =>
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(v) ||
+    'Min 8 chars, uppercase, lowercase, number & symbol'
+}
+
+// RESET FORM
+const resetCreateForm = () => {
+  newTenant.value = {
+    company_name: '',
+    registration_number: '',
+    phone: '',
+    email: '',
+    address: '',
+    password: ''
+  }
+  createError.value = null
+  createFormRef.value?.resetValidation()
+}
+
+// CREATE TENANT
+const createTenant = async () => {
+  const { valid } = await createFormRef.value.validate()
+  if (!valid) return
+
+  createLoading.value = true
+  createError.value = null
+
+  try {
+    await ApiService.post(
+      '/create-tenant',
+      {
+        name: newTenant.value.company_name,
+        registration_number: newTenant.value.registration_number,
+        phone: newTenant.value.phone,
+        email: newTenant.value.email,
+        password: newTenant.value.password,
+        address: newTenant.value.address
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${auth.token}`
+        }
+      }
+    )
+
+    showCreateDialog.value = false
+    resetCreateForm()
+    fetchTenants() // 🔥 refresh list
+  } catch (err) {
+    createError.value =
+      err.response?.data?.message || 'Failed to create tenant'
+  } finally {
+    createLoading.value = false
+  }
+}
+
+
 // RUN ON PAGE LOAD
 onMounted(() => {
   fetchTenants()
@@ -75,6 +156,100 @@ const paginatedTenants = computed(() => {
 </script>
 
 <template>
+  <v-dialog v-model="showCreateDialog" max-width="520" persistent>
+  <v-card class="rounded-sm px-6 py-6 relative">
+    <!-- CLOSE ICON -->
+    <button
+      class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+      @click="showCreateDialog = false"
+    >
+      ✕
+    </button>
+
+    <!-- TITLE -->
+    <h2 class="text-sm font-bold mb-6">Create New Tenant</h2>
+
+    <v-form ref="createFormRef">
+      <div class="space-y-4">
+        <v-text-field
+          label="Company Name"
+          v-model="newTenant.company_name"
+          variant="outlined"
+          density="comfortable"
+          :rules="[rules.required]"
+        />
+
+        <v-text-field
+          label="Registration Number"
+          v-model="newTenant.registration_number"
+          variant="outlined"
+          density="comfortable"
+          :rules="[rules.required]"
+        />
+
+        <v-text-field
+          label="Company Address"
+          v-model="newTenant.address"
+          variant="outlined"
+          density="comfortable"
+          :rules="[rules.required]"
+        />
+
+        <v-text-field
+          label="Phone Number"
+          v-model="newTenant.phone"
+          variant="outlined"
+          density="comfortable"
+          :rules="[rules.required, rules.phone]"
+        />
+
+        <v-text-field
+          label="Email Address"
+          v-model="newTenant.email"
+          variant="outlined"
+          density="comfortable"
+          :rules="[rules.required, rules.email]"
+        />
+        <v-text-field
+          label="Password"
+          v-model="newTenant.password"
+          variant="outlined"
+          density="comfortable"
+          :rules="[rules.required, rules.password]"
+        />
+
+        
+      </div>
+
+      <!-- ERROR -->
+      <p v-if="createError" class="text-red-600 text-sm mt-3">
+        {{ createError }}
+      </p>
+
+      <!-- ACTIONS -->
+      <div class="flex justify-end gap-3 mt-6">
+        <v-btn
+        color="error"
+          variant="plain"
+          class="normal-case"
+          @click="showCreateDialog = false"
+          :disabled="createLoading"
+        >
+          Cancel
+        </v-btn>
+
+        <v-btn
+          class="custom-btn text-white normal-case"
+          :loading="createLoading"
+          @click="createTenant"
+        >
+          Create Tenant
+        </v-btn>
+      </div>
+    </v-form>
+  </v-card>
+</v-dialog>
+
   <MainLayout>
     <div class="p-4 rounded shadow-sm bg-white m-4">
       <!-- Header with Title and Add Statement Button -->
@@ -85,6 +260,7 @@ const paginatedTenants = computed(() => {
         </div>
 
         <v-btn
+          @click="showCreateDialog = true"
           size="large"
           class="normal-case custom-btn hover:bg-blue-700 text-white text-sm font-semibold px-6 py-3 rounded-md shadow-md"
         >
@@ -230,6 +406,9 @@ const paginatedTenants = computed(() => {
 </template>
 
 <style scoped>
+  .v-btn{
+    text-transform: none;
+  }
 .pagination-custom .v-pagination__item {
   border-radius: 50% !important;
 }
