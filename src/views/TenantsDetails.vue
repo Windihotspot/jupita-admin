@@ -7,7 +7,7 @@ import { ElNotification } from 'element-plus'
 import moment from 'moment'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 const route = useRoute()
-const tenantId = ref(route.params.tenantId) 
+const tenantId = ref(route.params.tenantId)
 // Set date range to last 1 year
 const endDate = ref(moment().format('DD/MM/YYYY'))
 const startDate = ref(moment().subtract(1, 'year').format('DD/MM/YYYY'))
@@ -33,7 +33,7 @@ const fetchTenantDetails = async () => {
 
   const token = localStorage.getItem('token')
 
-  console.log("🔍 Fetch Tenant Details Payload:", params)
+  console.log('🔍 Fetch Tenant Details Payload:', params)
 
   try {
     const res = await ApiService.get('/get-tenant', {
@@ -42,68 +42,65 @@ const fetchTenantDetails = async () => {
     })
 
     const data = res.data
-    console.log("tenant details data:", data)
+    console.log('tenant details data:', data)
 
-    
     // Tenant info
-const superAdmin = data.team.find(member => member.title.toLowerCase() === 'super_admin');
-tenant.value = {
-  name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
-  status: superAdmin ? superAdmin.active : 0,
-  startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
-  endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
-};
-
+    const superAdmin = data.team.find((member) => member.title.toLowerCase() === 'super_admin')
+    tenant.value = {
+      name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
+      status: superAdmin ? superAdmin.active : 0,
+      startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
+      endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
+    }
 
     // Usage cards (map analysis, loans, id_verification, credit_history)
     usage.value = [
       { title: 'Analysis', value: data.analysis.reduce((acc, i) => acc + i.count, 0) },
       { title: 'Loans', value: data.loans.reduce((acc, i) => acc + i.count, 0) },
-      { title: 'ID Verification', value: data.id_verification.reduce((acc, i) => acc + i.count, 0) },
+      {
+        title: 'ID Verification',
+        value: data.id_verification.reduce((acc, i) => acc + i.count, 0)
+      },
       { title: 'Credit History', value: data.credit_history.reduce((acc, i) => acc + i.count, 0) }
     ]
 
     // Permissions / access management
-    permissions.value = data.tenant_products.map(p => ({
+    permissions.value = data.tenant_products.map((p) => ({
       name: p.name,
       enabled: true // default, or map from API if available
     }))
 
     // Team management
-    team.value = data.team.map(member => ({
+    team.value = data.team.map((member) => ({
       name: member.name,
-       status: superAdmin ? superAdmin.active === 1 ? 'Active' : 'Inactive' : null ,
+      status: superAdmin ? (superAdmin.active === 1 ? 'Active' : 'Inactive') : null,
       role: member.title,
       date: moment(member.created_at).format('DD MMM YYYY')
     }))
 
     // Billing / subscription
-    billing.value = data.tenant_product_price.map(item => ({
+    billing.value = data.tenant_product_price.map((item) => ({
       service: item.name,
       price: item.product_price
     }))
 
     // Usage logs (transactions)
-    usageLogs.value = data.transactions.data.map(t => ({
+    usageLogs.value = data.transactions.data.map((t) => ({
       date: moment(t.created_at).format('DD MMM YYYY'),
       type: t.description,
       amount: t.amount,
       user: tenant.value.name
     }))
-
   } catch (err) {
-    console.error("Error fetching tenant details:", err)
+    console.error('Error fetching tenant details:', err)
     error.value = err.response?.data?.message || 'Failed to load tenant details'
   } finally {
     loading.value = false
   }
 }
-
+const newApiStatus = tenant.value.activated === 1 ? 'deactivate' : 'activate'
 const toggleTenantStatus = async () => {
   const token = localStorage.getItem('token')
-
-
-  const newApiStatus = tenant.value.status === 1 ? 'deactivate' : 'activate'
 
   const payload = {
     tenant_id: tenantId.value,
@@ -120,7 +117,6 @@ const toggleTenantStatus = async () => {
     console.log('🔹 PUT /update-tenant-status Response:', res.data)
 
     ElNotification({
-      
       message: `Tenant ${newApiStatus === 'activate' ? 'activated' : 'deactivated'} successfully`,
       type: 'success',
       duration: 3000
@@ -128,10 +124,9 @@ const toggleTenantStatus = async () => {
 
     // Refresh tenant details after update
     fetchTenantDetails()
-
   } catch (err) {
     console.error('Error updating tenant status:', err)
-    
+
     ElNotification({
       title: 'Error',
       message: err.response?.data?.message || 'Failed to update tenant status',
@@ -146,43 +141,39 @@ onMounted(fetchTenantDetails)
 
 <template>
   <MainLayout>
-     <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
-    
-         <LoadingOverlay :visible="loading" message="Loading data..." />
-      </div>
+    <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
+      <LoadingOverlay :visible="loading" message="Loading data..." />
+    </div>
     <div v-else class="p-6 space-y-6">
       <!-- HEADER -->
       <div class="bg-white p-6 rounded shadow flex justify-between items-center">
         <div class="flex justify-between gap-4">
           <h1 class="text-md font-semibold">{{ tenant.name }}</h1>
-        <span
-  class="px-3 py-1 rounded text-xs"
-  :class="tenant.status === 1
-    ? 'bg-[#A2F8DE] text-green-600'
-    : 'bg-red-100 text-red-600'"
->
-  {{ tenant.status === 1 ? 'Active' : 'Inactive' }}
-</span>
-
+          <span
+            class="px-3 py-1 rounded text-xs"
+            :class="
+              tenant.activated === 1 ? 'bg-[#A2F8DE] text-green-600' : 'bg-red-100 text-red-600'
+            "
+          >
+            {{ tenant.activated === 1 ? 'Active' : 'Inactive' }}
+          </span>
         </div>
 
-     <v-btn
-  size="small"
-  :color="tenant.status === 1 ? 'red' : 'green'"
-  variant="flat"
-  class="text-white"
-  @click="toggleTenantStatus"
->
-  <template #prepend>
-    <i
-      :class="tenant.status === 1 ? 'fas fa-lock' : 'fas fa-unlock'"
-      class="text-white text-sm mr-2"
-    ></i>
-  </template>
-  {{ tenant.status === 1 ? 'Deactivate Tenant' : 'Activate Tenant' }}
-</v-btn>
-
-
+        <v-btn
+          size="small"
+          :color="tenant.activated === 1 ? 'red' : 'green'"
+          variant="flat"
+          class="text-white"
+          @click="toggleTenantStatus"
+        >
+          <template #prepend>
+            <i
+              :class="tenant.activated === 1 ? 'fas fa-lock' : 'fas fa-unlock'"
+              class="text-white text-sm mr-2"
+            ></i>
+          </template>
+          {{ tenant.activated === 1 ? 'Deactivate Tenant' : 'Activate Tenant' }}
+        </v-btn>
       </div>
 
       <!-- DATE RANGE -->
@@ -325,8 +316,6 @@ onMounted(fetchTenantDetails)
         </table>
       </div>
     </div>
-
-
   </MainLayout>
 </template>
 
