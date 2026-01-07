@@ -84,13 +84,14 @@ const resetCreateForm = () => {
     registration_number: '',
     phone: '',
     email: '',
-    address: '',
+    type: '',
     password: ''
   }
   createError.value = null
   createFormRef.value?.resetValidation()
 }
 
+// CREATE TENANT
 // CREATE TENANT
 const createTenant = async () => {
   const { valid } = await createFormRef.value.validate()
@@ -99,17 +100,30 @@ const createTenant = async () => {
   createLoading.value = true
   createError.value = null
 
+  // 🔍 LOG REQUEST PAYLOAD
+  const payload = {
+    business_name: newTenant.value.company_name,
+    business_reg_number: newTenant.value.registration_number,
+    phone_number: newTenant.value.phone,
+    business_email: newTenant.value.email,
+    password: newTenant.value.password,
+    business_type: 'QuickLoan',
+    personal_email: 'personalemail@email.com'
+  }
+
+  console.group('📤 CREATE TENANT REQUEST')
+  console.log('URL:', '/create-new-tenant')
+  console.log('Method:', 'POST')
+  console.log('Headers:', {
+    Authorization: `Bearer ${auth.token}`
+  })
+  console.log('Payload:', payload)
+  console.groupEnd()
+
   try {
-    await ApiService.post(
-      '/create-tenant',
-      {
-        name: newTenant.value.company_name,
-        registration_number: newTenant.value.registration_number,
-        phone: newTenant.value.phone,
-        email: newTenant.value.email,
-        password: newTenant.value.password,
-        address: newTenant.value.address
-      },
+    const response = await ApiService.post(
+      '/create-new-tenant',
+      payload,
       {
         headers: {
           Authorization: `Bearer ${auth.token}`
@@ -117,16 +131,30 @@ const createTenant = async () => {
       }
     )
 
+    // 🔍 LOG RESPONSE
+    console.group('📥 CREATE TENANT RESPONSE')
+    console.log('Status:', response.status)
+    console.log('Data:', response.data)
+    console.groupEnd()
+
     showCreateDialog.value = false
     resetCreateForm()
     fetchTenants() // 🔥 refresh list
   } catch (err) {
+    // 🔥 LOG ERROR RESPONSE
+    console.group('❌ CREATE TENANT ERROR')
+    console.log('Status:', err.response?.status)
+    console.log('Data:', err.response?.data)
+    console.log('Error:', err)
+    console.groupEnd()
+
     createError.value =
       err.response?.data?.message || 'Failed to create tenant'
   } finally {
     createLoading.value = false
   }
 }
+
 
 
 // RUN ON PAGE LOAD
