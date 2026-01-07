@@ -4,6 +4,8 @@ import LoginView from '@/views/LoginView.vue'
 import TenantsView from '@/views/TenantsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import TenantsDetails from '@/views/TenantsDetails.vue'
+import ProductDetails from '@/views/ProductDetails.vue'
+import AccountsView from '@/views/AccountsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +35,18 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: SettingsView
+    },
+    {
+      path: '/settings/products/:slug',
+      name: 'product-details',
+      component: ProductDetails,
+      props: true
+    },
+    {
+      path: '/accounts',
+      name: 'accounts',
+      component: AccountsView,
+      props: true
     }
   ]
 })
