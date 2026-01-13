@@ -1,6 +1,6 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import ApiService from '@/services/api'
 import { useRoute } from 'vue-router'
 import { ElNotification } from 'element-plus'
@@ -21,8 +21,12 @@ const permissions = ref([])
 const team = ref([])
 const billing = ref([])
 const usageLogs = ref([])
-const fetchTenantDetails = async () => {
-  loading.value = true
+const fetchTenantDetails = async (silent = false) => {
+  if (!silent) {
+    loading.value = true
+  }
+
+  
   error.value = null
 
   const params = {
@@ -47,11 +51,12 @@ const fetchTenantDetails = async () => {
     // Tenant info
     const superAdmin = data.team.find((member) => member.title.toLowerCase() === 'super_admin')
     tenant.value = {
-      name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
-      status: superAdmin ? superAdmin.active : 0,
-      startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
-      endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
-    }
+  name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
+  activated: data.tenant.activated, // ✅ IMPORTANT
+  startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
+  endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
+}
+
 
     // Usage cards (map analysis, loans, id_verification, credit_history)
     usage.value = [
@@ -95,16 +100,20 @@ const fetchTenantDetails = async () => {
     console.error('Error fetching tenant details:', err)
     error.value = err.response?.data?.message || 'Failed to load tenant details'
   } finally {
-    loading.value = false
+      if (!silent) {
+      loading.value = false
+    }
   }
 }
-const newApiStatus = tenant.value.activated === 1 ? 'deactivate' : 'activate'
+const newApiStatus = computed(() =>
+  tenant.value.activated === 1 ? 'deactivate' : 'activate'
+)
 const toggleTenantStatus = async () => {
   const token = localStorage.getItem('token')
 
   const payload = {
     tenant_id: tenantId.value,
-    status: 'activate'
+        status: newApiStatus.value // ✅ dynamic
   }
 
   console.log('🔹 PUT /update-tenant-status Request Payload:', payload)
@@ -117,13 +126,13 @@ const toggleTenantStatus = async () => {
     console.log('🔹 PUT /update-tenant-status Response:', res.data)
 
     ElNotification({
-      message: `Tenant ${newApiStatus === 'activate' ? 'activated' : 'deactivated'} successfully`,
+      message: `Tenant ${ newApiStatus.value === 'activate' ? 'activated' : 'deactivated'} successfully`,
       type: 'success',
       duration: 3000
     })
 
     // Refresh tenant details after update
-    fetchTenantDetails()
+    await fetchTenantDetails(true)
   } catch (err) {
     console.error('Error updating tenant status:', err)
 

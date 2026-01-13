@@ -50,8 +50,8 @@ const logout = async () => {
   <div class="h-full flex flex-col justify-between">
 
     <!-- Logo -->
-    <div class="p-2">
-      <img src="/src/assets/jupita-white-logo.png" alt="" />
+    <div class="p-1">
+      <img src="/src/assets/jupita-white-logo.png" alt="" class="w-48"/>
     </div>
 
     <!-- Menu -->
