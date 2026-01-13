@@ -3,8 +3,14 @@ import MainLayout from '@/layouts/full/MainLayout.vue'
 import { ref, onMounted, computed } from 'vue'
 import ApiService from '@/services/api'
 import { useRoute } from 'vue-router'
-import { ElNotification, ElMessageBox } from 'element-plus'
+import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
 import moment from 'moment'
+import { useAuthStore } from '@/stores/auth'
+
+// ───────────────────────────────
+// AUTH STORE
+// ───────────────────────────────
+const auth = useAuthStore()
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 const route = useRoute()
 const tenantId = ref(route.params.tenantId)
@@ -14,13 +20,14 @@ const startDate = ref(moment().subtract(1, 'year').format('DD/MM/YYYY'))
 
 const loading = ref(false)
 const error = ref(null)
-
 const tenant = ref({})
 const usage = ref([])
 const permissions = ref([])
 const team = ref([])
 const billing = ref([])
 const usageLogs = ref([])
+const editingPrice = ref(null) // product id currently being edited
+
 const fetchTenantDetails = async (silent = false) => {
   if (!silent) {
     loading.value = true
@@ -87,10 +94,16 @@ const fetchTenantDetails = async (silent = false) => {
     }))
 
     // Billing / subscription
-    billing.value = data.tenant_product_price.map((item) => ({
-      service: item.name,
-      price: item.product_price
-    }))
+    // Merge billing with tenant product IDs
+billing.value = data.tenant_product_price.map((item) => {
+  const tenantProduct = data.tenant_products.find((p) => p.name === item.name)
+  return {
+    service: item.name,
+    price: item.product_price,
+    productId: tenantProduct ? tenantProduct.product_id : null
+  }
+})
+
 
     // Usage logs (transactions)
     usageLogs.value = data.transactions.data.map((t) => ({
@@ -206,7 +219,7 @@ const toggleProductAvailability = async (product) => {
         type: 'warning'
       }
     )
-        product.loading = true 
+    product.loading = true
     const token = localStorage.getItem('token')
 
     const payload = {
@@ -235,10 +248,111 @@ const toggleProductAvailability = async (product) => {
         type: 'error'
       })
     }
-  }finally {
+  } finally {
     product.loading = false
   }
 }
+
+const deleteMember = async (member) => {
+  try {
+    await ElMessageBox.confirm(
+      `This will permanently remove ${member.name} from the team. Continue?`,
+      'Delete Member',
+      {
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        type: 'error',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+
+    const token = localStorage.getItem('token')
+
+    const payload = {
+      tenant_id: member.id,
+      user_id: auth.user.id
+    }
+    console.log('delete payload:', payload)
+
+    await ApiService.post('/delete-member', {
+      data: payload,
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    ElNotification({
+      message: `${member.name} has been removed successfully`,
+      type: 'success',
+      duration: 3000
+    })
+
+    // 🔄 silent refresh (no loading screen)
+    await fetchTenantDetails(true)
+  } catch (err) {
+    console.log('error delete:', err.response.data.data.error)
+    // user cancelled
+    if (err === 'cancel') return
+
+    ElNotification({
+      title: 'Error',
+      message: err.response?.data?.message || 'Failed to delete member',
+      type: 'error'
+    })
+  }
+}
+const editingProduct = ref(null)
+const newPrice = ref(0)
+const savingPrice = ref(false)
+const showPriceDialog = ref(false)
+
+const openPriceDialog = (item) => {
+  editingProduct.value = item
+  newPrice.value = item.price
+  showPriceDialog.value = true
+}
+
+const closePriceDialog = () => {
+  editingProduct.value = null
+  showPriceDialog.value = false
+}
+
+const updateProductPrice = async () => {
+  if (!editingProduct.value) return
+  savingPrice.value = true
+  const token = localStorage.getItem('token')
+
+  const payload = {
+    tenant_id: tenantId.value,
+    product_id: editingProduct.value.productId,
+    price: Number(newPrice.value)
+  }
+  console.log("update price payload:", payload)
+
+  try {
+    await ApiService.put('/update-product-price', payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    ElNotification({
+      message: `${editingProduct.value.name} price updated successfully`,
+      type: 'success',
+      duration: 3000
+    })
+
+    await fetchTenantDetails(true)
+
+    closePriceDialog() // 🔹 close after saving
+  } catch (err) {
+    console.error('Error updating product price:', err)
+    ElNotification({
+      title: 'Error',
+      message: err.response?.data?.message || 'Failed to update product price',
+      type: 'error'
+    })
+  } finally {
+    savingPrice.value = false
+  }
+}
+
 
 onMounted(fetchTenantDetails)
 </script>
@@ -327,14 +441,13 @@ onMounted(fetchTenantDetails)
             <span class="text-xs">{{ item.name }}</span>
 
             <!-- Switch -->
-           <el-switch
-  :model-value="item.enabled"
-  :loading="item.loading"
-  :disabled="item.loading"
-  @change="() => toggleProductAvailability(item)"
-  style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
-/>
-
+            <el-switch
+              :model-value="item.enabled"
+              :loading="item.loading"
+              :disabled="item.loading"
+              @change="() => toggleProductAvailability(item)"
+              style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+            />
           </div>
         </div>
       </div>
@@ -365,17 +478,32 @@ onMounted(fetchTenantDetails)
               <td>{{ member.role }}</td>
               <td>{{ member.date }}</td>
               <td class="text-center space-x-6">
-                <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
+                <!-- Edit -->
+                <el-tooltip content="Edit member" placement="top">
+                  <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
+                </el-tooltip>
 
-                <i
-                  :class="
-                    member.isActive ? 'fa fa-pause text-green-500' : 'fa fa-play text-orange-500'
-                  "
-                  class="fa fa-play text-green-500 cursor-pointer"
-                  :title="member.isActive ? 'Freeze member' : 'Unfreeze member'"
-                  @click="toggleMemberStatus(member)"
-                ></i>
-                <i class="fa fa-trash text-red-500 cursor-pointer"></i>
+                <!-- Freeze / Unfreeze -->
+                <el-tooltip
+                  :content="member.isActive ? 'Freeze member' : 'Unfreeze member'"
+                  placement="top"
+                >
+                  <i
+                    :class="
+                      member.isActive ? 'fa fa-pause text-red-500' : 'fa fa-play text-green-500'
+                    "
+                    class="cursor-pointer"
+                    @click="toggleMemberStatus(member)"
+                  ></i>
+                </el-tooltip>
+
+                <!-- Delete -->
+                <el-tooltip content="Delete member" placement="top">
+                  <i
+                    class="fa fa-trash text-red-500 cursor-pointer"
+                    @click="deleteMember(member)"
+                  ></i>
+                </el-tooltip>
               </td>
             </tr>
           </tbody>
@@ -396,15 +524,42 @@ onMounted(fetchTenantDetails)
           </thead>
 
           <tbody>
-            <tr v-for="(item, index) in billing" :key="index" class="p-2 hover:bg-blue-50">
+            <tr v-for="(item, index) in billing" :key="index" class="p-2">
               <td class="py-2">{{ item.service }}</td>
               <td>{{ item.price }}</td>
               <td>
-                <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
+                <i
+                  class="fa fa-edit text-gray-500 cursor-pointer"
+                  @click="openPriceDialog(item)"
+                ></i>
               </td>
             </tr>
           </tbody>
         </table>
+        <v-dialog v-model="showPriceDialog" max-width="400">
+        <v-card class="">
+          <p class="text-sm mx-6 my-4">Edit price for <span class="font-medium">{{ editingProduct?.service }}</span></p>
+
+          <v-card-text>
+            <v-text-field
+            density="compact"
+              v-model="newPrice"
+              label="New Price"
+              type="number"
+              variant="outlined"
+              dense
+            />
+          </v-card-text>
+
+          <v-card-actions class="justify-end">
+            <v-btn text @click="closePriceDialog">Cancel</v-btn>
+            <v-btn color="primary" :loading="savingPrice" @click="updateProductPrice">
+              Save
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       </div>
 
       <!-- USAGE TABLE -->
