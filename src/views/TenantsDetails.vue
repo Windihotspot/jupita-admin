@@ -3,7 +3,7 @@ import MainLayout from '@/layouts/full/MainLayout.vue'
 import { ref, onMounted, computed } from 'vue'
 import ApiService from '@/services/api'
 import { useRoute } from 'vue-router'
-import { ElNotification } from 'element-plus'
+import { ElNotification, ElMessageBox } from 'element-plus'
 import moment from 'moment'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 const route = useRoute()
@@ -26,7 +26,6 @@ const fetchTenantDetails = async (silent = false) => {
     loading.value = true
   }
 
-  
   error.value = null
 
   const params = {
@@ -51,12 +50,11 @@ const fetchTenantDetails = async (silent = false) => {
     // Tenant info
     const superAdmin = data.team.find((member) => member.title.toLowerCase() === 'super_admin')
     tenant.value = {
-  name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
-  activated: data.tenant.activated, // ✅ IMPORTANT
-  startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
-  endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
-}
-
+      name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
+      activated: data.tenant.activated, // ✅ IMPORTANT
+      startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
+      endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
+    }
 
     // Usage cards (map analysis, loans, id_verification, credit_history)
     usage.value = [
@@ -69,17 +67,22 @@ const fetchTenantDetails = async (silent = false) => {
       { title: 'Credit History', value: data.credit_history.reduce((acc, i) => acc + i.count, 0) }
     ]
 
-    // Permissions / access management
-    permissions.value = data.tenant_products.map((p) => ({
-      name: p.name,
-      enabled: true // default, or map from API if available
+    const tenantProductIds = new Set(data.tenant_products.map((p) => Number(p.product_id)))
+
+    permissions.value = data.all_products.map((product) => ({
+      id: product.product_id,
+      name: product.name,
+      enabled: tenantProductIds.has(product.product_id),
+      loading: false
     }))
 
     // Team management
     team.value = data.team.map((member) => ({
+      id: member.id,
       name: member.name,
-      status: superAdmin ? (superAdmin.active === 1 ? 'Active' : 'Inactive') : null,
       role: member.title,
+      isActive: member.active === 1,
+      status: member.active === 1 ? 'Active' : 'Frozen',
       date: moment(member.created_at).format('DD MMM YYYY')
     }))
 
@@ -100,20 +103,18 @@ const fetchTenantDetails = async (silent = false) => {
     console.error('Error fetching tenant details:', err)
     error.value = err.response?.data?.message || 'Failed to load tenant details'
   } finally {
-      if (!silent) {
+    if (!silent) {
       loading.value = false
     }
   }
 }
-const newApiStatus = computed(() =>
-  tenant.value.activated === 1 ? 'deactivate' : 'activate'
-)
+const newApiStatus = computed(() => (tenant.value.activated === 1 ? 'deactivate' : 'activate'))
 const toggleTenantStatus = async () => {
   const token = localStorage.getItem('token')
 
   const payload = {
     tenant_id: tenantId.value,
-        status: newApiStatus.value // ✅ dynamic
+    status: newApiStatus.value // ✅ dynamic
   }
 
   console.log('🔹 PUT /update-tenant-status Request Payload:', payload)
@@ -126,7 +127,7 @@ const toggleTenantStatus = async () => {
     console.log('🔹 PUT /update-tenant-status Response:', res.data)
 
     ElNotification({
-      message: `Tenant ${ newApiStatus.value === 'activate' ? 'activated' : 'deactivated'} successfully`,
+      message: `Tenant ${newApiStatus.value === 'activate' ? 'activated' : 'deactivated'} successfully`,
       type: 'success',
       duration: 3000
     })
@@ -142,6 +143,100 @@ const toggleTenantStatus = async () => {
       type: 'error',
       duration: 3000
     })
+  }
+}
+const toggleMemberStatus = async (member) => {
+  const action = member.isActive ? 'freeze' : 'unfreeze'
+  const actionLabel = member.isActive ? 'Freeze' : 'Unfreeze'
+
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to ${actionLabel.toLowerCase()} ${member.name}?`,
+      `${actionLabel} Member`,
+      {
+        confirmButtonText: actionLabel,
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }
+    )
+
+    const token = localStorage.getItem('token')
+
+    const payload = {
+      tenant_id: tenantId.value,
+      user_id: member.id,
+      status: action // freeze | unfreeze
+    }
+
+    await ApiService.put('/update-member-status', payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    ElNotification({
+      message: `${member.name} has been ${action === 'freeze' ? 'frozen' : 'unfrozen'} successfully`,
+      type: 'success',
+      duration: 3000
+    })
+
+    // 🔄 silent refresh
+    await fetchTenantDetails(true)
+  } catch (err) {
+    // ignore cancel
+    if (err !== 'cancel') {
+      ElNotification({
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to update member status',
+        type: 'error'
+      })
+    }
+  }
+}
+
+const toggleProductAvailability = async (product) => {
+  const action = product.enabled ? 'deactivate' : 'activate'
+  const actionLabel = product.enabled ? 'Deactivate' : 'Activate'
+
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to ${actionLabel.toLowerCase()} ${product.name}?`,
+      `${actionLabel} Product`,
+      {
+        confirmButtonText: actionLabel,
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }
+    )
+        product.loading = true 
+    const token = localStorage.getItem('token')
+
+    const payload = {
+      tenant_id: tenantId.value,
+      product_id: product.id,
+      status: action // activate | deactivate
+    }
+
+    await ApiService.put('/update-tenant-product-availability', payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    ElNotification({
+      message: `${product.name} ${action === 'activate' ? 'activated' : 'deactivated'} successfully`,
+      type: 'success',
+      duration: 3000
+    })
+
+    // 🔄 silent refresh (no loading state)
+    await fetchTenantDetails(true)
+  } catch (err) {
+    if (err !== 'cancel') {
+      ElNotification({
+        title: 'Error',
+        message: err.response?.data?.message || 'Failed to update product availability',
+        type: 'error'
+      })
+    }
+  }finally {
+    product.loading = false
   }
 }
 
@@ -196,7 +291,7 @@ onMounted(fetchTenantDetails)
       <!-- USAGE CARDS -->
 
       <div class="bg-white p-4 rounded shadow">
-        <h2 class="font-semibold mb-4 text-sm">Usage</h2>
+        <!-- <h2 class="font-semibold mb-4 text-sm">Usage</h2> -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div
             v-for="(item, index) in usage"
@@ -232,10 +327,14 @@ onMounted(fetchTenantDetails)
             <span class="text-xs">{{ item.name }}</span>
 
             <!-- Switch -->
-            <el-switch
-              v-model="item.enabled"
-              style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
-            />
+           <el-switch
+  :model-value="item.enabled"
+  :loading="item.loading"
+  :disabled="item.loading"
+  @change="() => toggleProductAvailability(item)"
+  style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+/>
+
           </div>
         </div>
       </div>
@@ -256,7 +355,7 @@ onMounted(fetchTenantDetails)
           </thead>
 
           <tbody>
-            <tr v-for="(member, index) in team" :key="index" class="p-2 hover:bg-blue-50">
+            <tr v-for="(member, index) in team" :key="index" class="p-2">
               <td class="py-2">{{ member.name }}</td>
               <td>
                 <span :class="member.status === 'Active' ? 'text-green-500' : 'text-red-500'">
@@ -267,7 +366,15 @@ onMounted(fetchTenantDetails)
               <td>{{ member.date }}</td>
               <td class="text-center space-x-6">
                 <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
-                <i class="fa fa-play text-green-500 cursor-pointer"></i>
+
+                <i
+                  :class="
+                    member.isActive ? 'fa fa-pause text-green-500' : 'fa fa-play text-orange-500'
+                  "
+                  class="fa fa-play text-green-500 cursor-pointer"
+                  :title="member.isActive ? 'Freeze member' : 'Unfreeze member'"
+                  @click="toggleMemberStatus(member)"
+                ></i>
                 <i class="fa fa-trash text-red-500 cursor-pointer"></i>
               </td>
             </tr>
@@ -277,7 +384,7 @@ onMounted(fetchTenantDetails)
 
       <!-- SUBSCRIPTION & BILLING MANAGEMENT -->
       <div class="bg-white p-6 rounded shadow mt-6">
-        <h2 class="font-semibold mb-4 text-sm">Subscription and Billing Management</h2>
+        <p class="font-semibold mb-4 text-sm">Subscription and Billing Management</p>
 
         <table class="w-full text-sm m-4">
           <thead>
@@ -302,7 +409,7 @@ onMounted(fetchTenantDetails)
 
       <!-- USAGE TABLE -->
       <div class="bg-white p-6 rounded shadow mt-6">
-        <h2 class="font-semibold mb-4 text-sm">Usage</h2>
+        <p class="font-semibold mb-4 text-sm">Usage</p>
 
         <table class="w-full text-sm m-4">
           <thead>
