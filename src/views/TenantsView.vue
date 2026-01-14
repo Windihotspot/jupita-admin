@@ -84,6 +84,7 @@ const resetCreateForm = () => {
     registration_number: '',
     phone: '',
     email: '',
+    personal_email: '',
     type: '',
     password: ''
   }
@@ -108,7 +109,7 @@ const createTenant = async () => {
     business_email: newTenant.value.email,
     password: newTenant.value.password,
     business_type: 'QuickLoan',
-    personal_email: 'personalemail@email.com'
+    personal_email: newTenant.value.personal_email
   }
 
   console.group('📤 CREATE TENANT REQUEST')
@@ -232,8 +233,15 @@ const paginatedTenants = computed(() => {
         />
 
         <v-text-field
-          label="Email Address"
+          label="Business Email Address"
           v-model="newTenant.email"
+          variant="outlined"
+          density="comfortable"
+          :rules="[rules.required, rules.email]"
+        />
+        <v-text-field
+          label="Personal Email address"
+          v-model="newTenant.personal_email"
           variant="outlined"
           density="comfortable"
           :rules="[rules.required, rules.email]"

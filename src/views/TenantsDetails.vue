@@ -6,10 +6,6 @@ import { useRoute } from 'vue-router'
 import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
 import moment from 'moment'
 import { useAuthStore } from '@/stores/auth'
-
-// ───────────────────────────────
-// AUTH STORE
-// ───────────────────────────────
 const auth = useAuthStore()
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 const route = useRoute()
@@ -60,7 +56,8 @@ const fetchTenantDetails = async (silent = false) => {
       name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
       activated: data.tenant.activated, // ✅ IMPORTANT
       startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
-      endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY')
+      endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
+      id: data.tenant.id
     }
 
     // Usage cards (map analysis, loans, id_verification, credit_history)
@@ -228,7 +225,7 @@ const toggleProductAvailability = async (product) => {
       status: action // activate | deactivate
     }
 
-    await ApiService.put('/update-tenant-product-availability', payload, {
+    await ApiService.put('/update-tenant-product-availability',payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
 
@@ -269,13 +266,12 @@ const deleteMember = async (member) => {
     const token = localStorage.getItem('token')
 
     const payload = {
-      tenant_id: member.id,
-      user_id: auth.user.id
+      tenant_id: tenant.value.id,
+      user_id: member.id
     }
     console.log('delete payload:', payload)
 
-    await ApiService.post('/delete-member', {
-      data: payload,
+    await ApiService.post('/delete-member',payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
 

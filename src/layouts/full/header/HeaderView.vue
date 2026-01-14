@@ -2,6 +2,8 @@
 import { onMounted, ref, computed } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
 
 // Reactive variable to handle loading state
 </script>
@@ -20,7 +22,7 @@ import { useRouter } from 'vue-router'
 
         <!-- Name -->
         <span class="ml-2 text-sm font-medium text-gray-700 max-w-[80px] truncate">
-          Williams...
+          {{ auth.user.firstname }} {{ auth.user.lastname }}
         </span>
 
         

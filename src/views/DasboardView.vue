@@ -19,7 +19,7 @@
 
         <!-- Date Filter -->
         <div class="m-4 flex items-center gap-4">
-  <i class="fa-solid fa-filter pr-4"></i>
+  <i class="fa-solid fa-filter pr-4 text-blue"></i>
 
   <!-- Start Date -->
   <el-date-picker
@@ -44,22 +44,22 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div class="p-4 rounded-lg bg-[#EAF2FF]">
+    <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="p-4 rounded-lg bg-blue-50">
         <p class="text-gray-700">Total Number of Tenants</p>
-        <h2 class="text-xl mt-6 font-bold">{{ stats.total }}</h2>
+        <h2 class="text-sm mt-6 font-bold">{{ stats.total }}</h2>
       </div>
-      <div class="p-4 rounded-lg bg-[#F6FBF5]">
+      <div class="p-4 rounded-lg bg-green-50">
         <p class="text-gray-700">Active Tenants</p>
-        <h2 class="text-xl mt-6 font-bold">{{ stats.active }}</h2>
+        <h2 class="text-sm mt-6 font-bold">{{ stats.active }}</h2>
       </div>
-      <div class="p-4 rounded-lg bg-[#F9EAF1]">
+      <div class="p-4 rounded-lg bg-pink-50">
         <p class="text-gray-700">Inactive Tenants</p>
-        <h2 class="text-xl mt-6 font-bold">{{ stats.inactive }}</h2>
+        <h2 class="text-sm mt-6 font-bold">{{ stats.inactive }}</h2>
       </div>
-      <div class="p-4 rounded-lg bg-[#FCF3EA]">
+      <div class="p-4 rounded-lg bg-orange-50">
         <p class="text-gray-700">Tenants Pending Approval</p>
-        <h2 class="text-xl mt-6 font-bold">{{ stats.pending }}</h2>
+        <h2 class="text-sm mt-6 font-bold">{{ stats.pending }}</h2>
       </div>
     </div>
 
@@ -67,7 +67,7 @@
     <div class="bg-white p-4 rounded-lg shadow">
       <!-- Date Filter -->
         <div class="m-4 flex items-center gap-4">
-  <i class="fa-solid fa-filter pr-4"></i>
+  <i class="fa-solid fa-filter pr-4 text-blue"></i>
 
   <!-- products-->
          <el-select
