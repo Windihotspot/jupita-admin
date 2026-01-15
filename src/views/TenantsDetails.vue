@@ -92,15 +92,14 @@ const fetchTenantDetails = async (silent = false) => {
 
     // Billing / subscription
     // Merge billing with tenant product IDs
-billing.value = data.tenant_product_price.map((item) => {
-  const tenantProduct = data.tenant_products.find((p) => p.name === item.name)
-  return {
-    service: item.name,
-    price: item.product_price,
-    productId: tenantProduct ? tenantProduct.product_id : null
-  }
-})
-
+    billing.value = data.tenant_product_price.map((item) => {
+      const tenantProduct = data.tenant_products.find((p) => p.name === item.name)
+      return {
+        service: item.name,
+        price: item.product_price,
+        productId: tenantProduct ? tenantProduct.product_id : null
+      }
+    })
 
     // Usage logs (transactions)
     usageLogs.value = data.transactions.data.map((t) => ({
@@ -225,7 +224,7 @@ const toggleProductAvailability = async (product) => {
       status: action // activate | deactivate
     }
 
-    await ApiService.put('/update-tenant-product-availability',payload, {
+    await ApiService.put('/update-tenant-product-availability', payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
 
@@ -271,7 +270,7 @@ const deleteMember = async (member) => {
     }
     console.log('delete payload:', payload)
 
-    await ApiService.post('/delete-member',payload, {
+    await ApiService.post('/delete-member', payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
 
@@ -321,7 +320,7 @@ const updateProductPrice = async () => {
     product_id: editingProduct.value.productId,
     price: Number(newPrice.value)
   }
-  console.log("update price payload:", payload)
+  console.log('update price payload:', payload)
 
   try {
     await ApiService.put('/update-product-price', payload, {
@@ -349,7 +348,6 @@ const updateProductPrice = async () => {
   }
 }
 
-
 onMounted(fetchTenantDetails)
 </script>
 
@@ -359,6 +357,12 @@ onMounted(fetchTenantDetails)
       <LoadingOverlay :visible="loading" message="Loading data..." />
     </div>
     <div v-else class="p-6 space-y-6">
+      <RouterLink to="/dashboard" class="absolute top-4 left-4">
+        <button class="flex items-center text-black text-lg font-normal">
+          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #2563eb"></i>
+          Back
+        </button>
+      </RouterLink>
       <!-- HEADER -->
       <div class="bg-white p-6 rounded shadow flex justify-between items-center">
         <div class="flex justify-between gap-4">
@@ -533,29 +537,30 @@ onMounted(fetchTenantDetails)
           </tbody>
         </table>
         <v-dialog v-model="showPriceDialog" max-width="400">
-        <v-card class="">
-          <p class="text-sm mx-6 my-4">Edit price for <span class="font-medium">{{ editingProduct?.service }}</span></p>
+          <v-card class="">
+            <p class="text-sm mx-6 my-4">
+              Edit price for <span class="font-medium">{{ editingProduct?.service }}</span>
+            </p>
 
-          <v-card-text>
-            <v-text-field
-            density="compact"
-              v-model="newPrice"
-              label="New Price"
-              type="number"
-              variant="outlined"
-              dense
-            />
-          </v-card-text>
+            <v-card-text>
+              <v-text-field
+                density="compact"
+                v-model="newPrice"
+                label="New Price"
+                type="number"
+                variant="outlined"
+                dense
+              />
+            </v-card-text>
 
-          <v-card-actions class="justify-end">
-            <v-btn text @click="closePriceDialog">Cancel</v-btn>
-            <v-btn color="primary" :loading="savingPrice" @click="updateProductPrice">
-              Save
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
+            <v-card-actions class="justify-end">
+              <v-btn text @click="closePriceDialog">Cancel</v-btn>
+              <v-btn color="primary" :loading="savingPrice" @click="updateProductPrice">
+                Save
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
       </div>
 
       <!-- USAGE TABLE -->
