@@ -35,6 +35,14 @@
               :default-value="null"
               @change="fetchDashboardData"
             />
+
+            <!-- Chip -->
+            <div
+              v-if="dateRangeLabel"
+              class="ml-auto bg-blue-100 text-[#1f5aa3] text-sm font-medium px-3 py-1 rounded-md"
+            >
+              {{ dateRangeLabel }}
+            </div>
           </div>
         </div>
       </div>
@@ -77,7 +85,13 @@
             <el-option v-for="cls in products" :key="cls.id" :label="cls.name" :value="cls.name" />
           </el-select>
         </div>
-        <apexchart :key="chartKey" type="bar" :options="chartOptions" :series="chartSeries" height="350" />
+        <apexchart
+          :key="chartKey"
+          type="bar"
+          :options="chartOptions"
+          :series="chartSeries"
+          height="350"
+        />
       </div>
     </div>
   </MainLayout>
@@ -121,16 +135,15 @@ const products = [
 
 // Map frontend product names to backend keys
 const productMap = {
-  'Analyze': 'periculum_analysis',
+  Analyze: 'periculum_analysis',
   'Credit Search': 'credit_history',
-  'Originate': 'loan',
-  'Verify': 'id_verification'
+  Originate: 'loan',
+  Verify: 'id_verification'
 }
 
 // ───────────────────────────────
 // DASHBOARD STATS
 // ───────────────────────────────
-
 
 const stats = reactive({
   total: 0,
@@ -145,37 +158,34 @@ const stats = reactive({
 // ───────────────────────────────
 const chartOptions = reactive({
   chart: { id: 'dashboard-chart' },
-  colors: ['#1e40af'],
+  colors: ['#1f5aa3'],
   plotOptions: {
-  bar: {
-    columnWidth: '10%',
-    borderRadius: 4
-  }
-}
-,
+    bar: {
+      columnWidth: '10%',
+      borderRadius: 4
+    }
+  },
   dataLabels: {
     enabled: false,
     position: 'top',
     style: { fontSize: '12px', colors: ['#000'] }
   },
   xaxis: {
-  categories: [],
-  labels: {
-    show: true,
-    rotate: -45,
-    trim: false,
-    style: {
-      fontSize: '12px'
+    categories: [],
+    labels: {
+      show: true,
+      rotate: -45,
+      trim: false,
+      style: {
+        fontSize: '12px'
+      }
     }
-  }
-}
-,
+  },
   yaxis: { show: true },
   grid: { yaxis: { lines: { show: false } } }
 })
 
 const chartKey = ref(0)
-
 
 const chartSeries = reactive([{ name: 'Count', data: [] }])
 
@@ -201,6 +211,7 @@ const buildChartFromStats = () => {
   chartKey.value++ // 🔥 FORCE RE-RENDER
 }
 
+const dateRangeLabel = ref('')
 
 watch(selectedProductName, (newVal) => {
   if (!newVal) {
@@ -210,7 +221,6 @@ watch(selectedProductName, (newVal) => {
 
   buildChartFromStats()
 })
-
 
 // ───────────────────────────────
 // FETCH DASHBOARD DATA BY DATE
@@ -228,7 +238,7 @@ const fetchDashboardData = async () => {
   try {
     const res = await ApiService.post('/filter-dashboard-data-by-date', payload)
     const d = res.data
-console.log('Dashboard fetch dashboard data by date:', res)
+    console.log('Dashboard fetch dashboard data by date:', res)
     // summary cards
     stats.total = d.tenants
     stats.active = d.active_tenants
@@ -251,9 +261,39 @@ console.log('Dashboard fetch dashboard data by date:', res)
   }
 }
 
+watch([startDate, endDate], ([newStart, newEnd]) => {
+  if (newStart && newEnd) {
+    dateRangeLabel.value = `${moment(newStart).format('DD MMM YYYY')} - ${moment(newEnd).format('DD MMM YYYY')}`
+  } else {
+    dateRangeLabel.value = ''
+  }
+})
 
 onMounted(() => {
+  // Default last 30 days
+  const today = moment()
+  const thirtyDaysAgo = moment().subtract(30, 'days')
 
+  startDate.value = thirtyDaysAgo.toDate()
+  endDate.value = today.toDate()
 
+  // Update the chip label
+  dateRangeLabel.value = `${thirtyDaysAgo.format('DD MMM YYYY')} - ${today.format('DD MMM YYYY')}`
+
+  if (auth.isAuthenticated) {
+    // Populate summary cards
+    stats.total = auth.tenants
+    stats.active = auth.active_tenants
+    stats.inactive = auth.inactive_tenants
+    stats.pending = auth.pending_tenants ?? 0
+
+    // Populate chart if stats exist
+    stats.rawStats = auth.stats || {}
+    console.log('store stats:', stats.rawStats)
+    if (Object.keys(stats.rawStats).length) {
+      selectedProductName.value = 'Analyze'
+      buildChartFromStats()
+    }
+  }
 })
 </script>
