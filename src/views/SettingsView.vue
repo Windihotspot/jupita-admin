@@ -1,12 +1,13 @@
 <script setup>
-  import ApiService from '@/services/api'
+import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
+import ApiService from '@/services/api'
 import { ref, onMounted } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 const tab = ref('products')
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore()
-console.log("auth:", auth)
+console.log('auth:', auth)
 const productsLoading = ref(false)
 const productsError = ref(null)
 const products = ref([])
@@ -22,7 +23,7 @@ const fetchProducts = async () => {
 
   try {
     const response = await ApiService.get('/get-products', {
-       headers: {
+      headers: {
         Authorization: `Bearer ${auth.token}`
       }
     })
@@ -33,7 +34,6 @@ const fetchProducts = async () => {
     console.groupEnd()
 
     products.value = response.data?.products || response.data || []
-
   } catch (err) {
     console.group('❌ GET PRODUCTS ERROR')
     console.log('Status:', err.response?.status)
@@ -41,13 +41,11 @@ const fetchProducts = async () => {
     console.log('Error:', err)
     console.groupEnd()
 
-    productsError.value =
-      err.response?.data?.message || 'Failed to load products'
+    productsError.value = err.response?.data?.message || 'Failed to load products'
   } finally {
     productsLoading.value = false
   }
 }
-
 
 const showCreateDialog = ref(false)
 const createLoading = ref(false)
@@ -63,7 +61,6 @@ const newAdmin = ref({
   password: '',
   role: 'admin'
 })
-
 
 // VALIDATION RULES
 const rules = {
@@ -91,7 +88,6 @@ const resetCreateForm = () => {
   createFormRef.value?.resetValidation()
 }
 
-
 const createAdmin = async () => {
   const { valid } = await createFormRef.value.validate()
   if (!valid) return
@@ -116,7 +112,11 @@ const createAdmin = async () => {
 
   try {
     const response = await ApiService.post('/create-admin', payload)
-
+    ElNotification({
+      message: 'New Jupita admin added',
+      type: 'success',
+      duration: 3000
+    })
     console.group('📥 CREATE ADMIN RESPONSE')
     console.log('Status:', response.status)
     console.log('Data:', response.data)
@@ -125,7 +125,6 @@ const createAdmin = async () => {
     showCreateDialog.value = false
     resetCreateForm()
     // optionally refresh admins list here
-
   } catch (err) {
     console.group('❌ CREATE ADMIN ERROR')
     console.log('Status:', err.response?.status)
@@ -133,8 +132,7 @@ const createAdmin = async () => {
     console.log('Error:', err)
     console.groupEnd()
 
-    createError.value =
-      err.response?.data?.message || 'Failed to create admin'
+    createError.value = err.response?.data?.message || 'Failed to create admin'
   } finally {
     createLoading.value = false
   }
@@ -160,14 +158,14 @@ const profile = ref({
   fullname: 'Williams Adeyemi',
   phone: '09065512525',
   email: 'wadeyemi@getjupita.com',
-  role: 'Super Admin',
+  role: 'Super Admin'
 })
 
 const team = ref([
   { id: 1, name: 'Adeyemi Williams', role: 'Super Admin', status: 'Inactive' },
   { id: 2, name: 'Anthony Oboli', role: 'Super Admin', status: 'Active' },
   { id: 3, name: 'Faramni Power Bank', role: 'Admin', status: 'Active' },
-  { id: 4, name: 'Ifiok 😄', role: 'Admin', status: 'Active' },
+  { id: 4, name: 'Ifiok 😄', role: 'Admin', status: 'Active' }
 ])
 
 // ----------------------
@@ -196,15 +194,11 @@ const toggleProductStatus = async (product) => {
   console.groupEnd()
 
   try {
-    const response = await ApiService.post(
-      '/toggle-feature-status',
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        }
+    const response = await ApiService.post('/toggle-feature-status', payload, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
       }
-    )
+    })
 
     console.group('📥 TOGGLE FEATURE RESPONSE')
     console.log('Status:', response.status)
@@ -213,7 +207,6 @@ const toggleProductStatus = async (product) => {
 
     // update UI status label if backend responds successfully
     product.status = product.global ? 'Active' : 'Inactive'
-
   } catch (err) {
     console.group('❌ TOGGLE FEATURE ERROR')
     console.log('Status:', err.response?.status)
@@ -228,14 +221,13 @@ const toggleProductStatus = async (product) => {
   }
 }
 
-onMounted(()=>{
+onMounted(() => {
   fetchProducts()
 })
 </script>
 
-
 <template>
-    <v-dialog v-model="showCreateDialog" max-width="520" persistent>
+  <v-dialog v-model="showCreateDialog" max-width="520" persistent>
     <v-card class="rounded-sm px-6 py-6 relative">
       <!-- CLOSE ICON -->
       <button
@@ -249,78 +241,75 @@ onMounted(()=>{
       <h2 class="text-sm font-bold mb-6">Create New Admin</h2>
 
       <v-form ref="createFormRef">
-  <div class="space-y-4">
+        <div class="space-y-4">
+          <v-text-field
+            label="First Name"
+            v-model="newAdmin.firstname"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required]"
+          />
 
-    <v-text-field
-      label="First Name"
-      v-model="newAdmin.firstname"
-      variant="outlined"
-      density="comfortable"
-      :rules="[rules.required]"
-    />
+          <v-text-field
+            label="Last Name"
+            v-model="newAdmin.lastname"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required]"
+          />
 
-    <v-text-field
-      label="Last Name"
-      v-model="newAdmin.lastname"
-      variant="outlined"
-      density="comfortable"
-      :rules="[rules.required]"
-    />
+          <v-text-field
+            label="Email Address"
+            v-model="newAdmin.email"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required, rules.email]"
+          />
 
-    <v-text-field
-      label="Email Address"
-      v-model="newAdmin.email"
-      variant="outlined"
-      density="comfortable"
-      :rules="[rules.required, rules.email]"
-    />
+          <v-text-field
+            label="Phone Number"
+            v-model="newAdmin.phone"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required, rules.phone]"
+          />
 
-    <v-text-field
-      label="Phone Number"
-      v-model="newAdmin.phone"
-      variant="outlined"
-      density="comfortable"
-      :rules="[rules.required, rules.phone]"
-    />
+          <v-text-field
+            label="Password"
+            v-model="newAdmin.password"
+            type="password"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required, rules.password]"
+          />
+        </div>
 
-    <v-text-field
-      label="Password"
-      v-model="newAdmin.password"
-      type="password"
-      variant="outlined"
-      density="comfortable"
-      :rules="[rules.required, rules.password]"
-    />
+        <!-- ERROR -->
+        <p v-if="createError" class="text-red-600 text-sm mt-3">
+          {{ createError }}
+        </p>
 
-  </div>
+        <!-- ACTIONS -->
+        <div class="flex justify-end gap-3 mt-6">
+          <v-btn
+            color="error"
+            variant="plain"
+            class="normal-case"
+            @click="showCreateDialog = false"
+            :disabled="createLoading"
+          >
+            Cancel
+          </v-btn>
 
-  <!-- ERROR -->
-  <p v-if="createError" class="text-red-600 text-sm mt-3">
-    {{ createError }}
-  </p>
-
-  <!-- ACTIONS -->
-  <div class="flex justify-end gap-3 mt-6">
-    <v-btn
-      color="error"
-      variant="plain"
-      class="normal-case"
-      @click="showCreateDialog = false"
-      :disabled="createLoading"
-    >
-      Cancel
-    </v-btn>
-
-    <v-btn
-      class="custom-btn text-white normal-case"
-      :loading="createLoading"
-      @click="createAdmin"
-    >
-      Create Admin
-    </v-btn>
-  </div>
-</v-form>
-
+          <v-btn
+            class="custom-btn text-white normal-case"
+            :loading="createLoading"
+            @click="createAdmin"
+          >
+            Create Admin
+          </v-btn>
+        </div>
+      </v-form>
     </v-card>
   </v-dialog>
   <MainLayout>
@@ -331,7 +320,7 @@ onMounted(()=>{
           <p class="text-gray-500 text-sm mt-1">Manage platform wide configurations</p>
         </div>
 
-         <v-btn
+        <v-btn
           @click="showCreateDialog = true"
           size="large"
           class="normal-case custom-btn hover:bg-blue-700 text-white text-sm font-semibold px-6 py-3 rounded-md shadow-md"
@@ -341,12 +330,12 @@ onMounted(()=>{
           >
             <i class="fa-solid fa-plus text-sm text-[#1f5aa3]"></i>
           </span>
-          Add New 
+          Add New
         </v-btn>
       </div>
-       <v-tabs v-model="tab" density="compact">
+      <v-tabs v-model="tab" density="compact">
         <v-tab
-        class="mb-4"
+          class="mb-4"
           v-for="item in tabs"
           :key="item.value"
           :value="item.value"
@@ -362,8 +351,6 @@ onMounted(()=>{
     </div>
 
     <div class="m-4">
-      
-
       <v-tabs-window v-model="tab" class="mt-4">
         <v-tabs-window-item value="products">
           <div class="flex items-center space-x-6 p-2">
@@ -445,24 +432,23 @@ onMounted(()=>{
 
                   <!-- Action -->
                   <td class="px-4 py-3">
-                     <button
-    class="px-4 py-1.5 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
-    @click="goToProduct(product)"
-  >
-    View
-  </button>
+                    <button
+                      class="px-4 py-1.5 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+                      @click="goToProduct(product)"
+                    >
+                      View
+                    </button>
                   </td>
 
                   <!-- Global Control -->
                   <td class="px-4 py-3">
                     <el-switch
-  v-model="product.global"
-  :loading="toggleLoadingMap[product.id]"
-  active-color="#16a34a"
-  inactive-color="#dc2626"
-  @change="() => toggleProductStatus(product)"
-/>
-
+                      v-model="product.global"
+                      :loading="toggleLoadingMap[product.id]"
+                      active-color="#16a34a"
+                      inactive-color="#dc2626"
+                      @change="() => toggleProductStatus(product)"
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -470,135 +456,132 @@ onMounted(()=>{
           </div>
         </v-tabs-window-item>
         <v-tabs-window-item value="account">
-            <div class="flex bg-white rounded-lg shadow min-h-[600px]">
-
-    <!-- Sidebar -->
-    <aside class="w-64 M-4 bg-blue-50 p-4">
-      <ul class="space-y-4">
-        <li>
-          <button
-            class="w-full text-left text-sm px-4 py-2 rounded-lg font-medium"
-            :class="activeTab === 'profile'
-              ? 'bg-[#1F5AA3] text-white'
-              : 'text-black-600 hover:bg-gray-100'"
-            @click="activeTab = 'profile'"
-          >
-            Personal Information
-          </button>
-        </li>
-
-        <li>
-          <button
-            class="w-full text-left text-sm px-4 py-2 rounded-lg font-medium"
-            :class="activeTab === 'team'
-              ? 'bg-[#1F5AA3] text-white'
-              : 'text-black-600 hover:bg-gray-100'"
-            @click="activeTab = 'team'"
-          >
-            Team
-          </button>
-        </li>
-      </ul>
-    </aside>
-
-    <!-- Content -->
-    <main class="flex-1 m-4 p-8">
-
-      <!-- ================= PERSONAL INFORMATION ================= -->
-      <section v-if="activeTab === 'profile'">
-        <p class="text-sm font-semibold mb-6">Personal Information</p>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
-          <v-text-field
-            v-model="profile.fullname"
-            label="Full name"
-            variant="outlined"
-            density="comfortable"
-          />
-
-          <v-text-field
-            v-model="profile.phone"
-            label="Phone number"
-            variant="outlined"
-            density="comfortable"
-          />
-
-          <v-text-field
-            v-model="profile.email"
-            label="Email address"
-            variant="outlined"
-            density="comfortable"
-            disabled
-          />
-
-          <v-select
-            v-model="profile.role"
-            label="Role"
-            :items="roles"
-            variant="outlined"
-            density="comfortable"
-          />
-        </div>
-
-        <div class="mt-8">
-          <v-btn color="primary">
-            Save changes
-          </v-btn>
-        </div>
-      </section>
-
-      <!-- ================= TEAM ================= -->
-      <section v-else>
-        <p class="text-sm font-semibold mb-6">Team</p>
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full border rounded-lg overflow-hidden">
-            <thead class="bg-gray-100">
-              <tr class="text-left text-sm font-semibold text-gray-600">
-                <th class="px-4 py-3">S/N</th>
-                <th class="px-4 py-3">Product Name</th>
-                <th class="px-4 py-3">Role</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3"></th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr
-                v-for="(member, index) in team"
-                :key="member.id"
-                class="border-t text-sm"
-              >
-                <td class="px-4 py-3">{{ index + 1 }}</td>
-                <td class="px-4 py-3">{{ member.name }}</td>
-                <td class="px-4 py-3">{{ member.role }}</td>
-
-                <td class="px-4 py-3">
-                  <span
-                    class="px-3 py-1 rounded-full text-xs font-medium"
-                    :class="member.status === 'Active'
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-red-100 text-red-600'"
+          <div class="flex bg-white rounded-lg shadow min-h-[600px]">
+            <!-- Sidebar -->
+            <aside class="w-64 M-4 bg-blue-50 p-4">
+              <ul class="space-y-4">
+                <li>
+                  <button
+                    class="w-full text-left text-sm px-4 py-2 rounded-lg font-medium"
+                    :class="
+                      activeTab === 'profile'
+                        ? 'bg-[#1F5AA3] text-white'
+                        : 'text-black-600 hover:bg-gray-100'
+                    "
+                    @click="activeTab = 'profile'"
                   >
-                    {{ member.status }}
-                  </span>
-                </td>
+                    Personal Information
+                  </button>
+                </li>
 
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-4 text-gray-500">
-                    <i class="fas fa-pen cursor-pointer hover:text-blue-600"></i>
-                   <el-switch />
-                    <i class="fas fa-trash cursor-pointer text-red hover:text-red-600"></i>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                <li>
+                  <button
+                    class="w-full text-left text-sm px-4 py-2 rounded-lg font-medium"
+                    :class="
+                      activeTab === 'team'
+                        ? 'bg-[#1F5AA3] text-white'
+                        : 'text-black-600 hover:bg-gray-100'
+                    "
+                    @click="activeTab = 'team'"
+                  >
+                    Team
+                  </button>
+                </li>
+              </ul>
+            </aside>
 
-    </main>
-  </div>
+            <!-- Content -->
+            <main class="flex-1 m-4 p-8">
+              <!-- ================= PERSONAL INFORMATION ================= -->
+              <section v-if="activeTab === 'profile'">
+                <p class="text-sm font-semibold mb-6">Personal Information</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
+                  <v-text-field
+                    v-model="profile.fullname"
+                    label="Full name"
+                    variant="outlined"
+                    density="comfortable"
+                  />
+
+                  <v-text-field
+                    v-model="profile.phone"
+                    label="Phone number"
+                    variant="outlined"
+                    density="comfortable"
+                  />
+
+                  <v-text-field
+                    v-model="profile.email"
+                    label="Email address"
+                    variant="outlined"
+                    density="comfortable"
+                    disabled
+                  />
+
+                  <v-select
+                    v-model="profile.role"
+                    label="Role"
+                    :items="roles"
+                    variant="outlined"
+                    density="comfortable"
+                  />
+                </div>
+
+                <div class="mt-8">
+                  <v-btn color="primary"> Save changes </v-btn>
+                </div>
+              </section>
+
+              <!-- ================= TEAM ================= -->
+              <section v-else>
+                <p class="text-sm font-semibold mb-6">Team</p>
+
+                <div class="overflow-x-auto">
+                  <table class="min-w-full border rounded-lg overflow-hidden">
+                    <thead class="bg-gray-100">
+                      <tr class="text-left text-sm font-semibold text-gray-600">
+                        <th class="px-4 py-3">S/N</th>
+                        <th class="px-4 py-3">Product Name</th>
+                        <th class="px-4 py-3">Role</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      <tr v-for="(member, index) in team" :key="member.id" class="border-t text-sm">
+                        <td class="px-4 py-3">{{ index + 1 }}</td>
+                        <td class="px-4 py-3">{{ member.name }}</td>
+                        <td class="px-4 py-3">{{ member.role }}</td>
+
+                        <td class="px-4 py-3">
+                          <span
+                            class="px-3 py-1 rounded-full text-xs font-medium"
+                            :class="
+                              member.status === 'Active'
+                                ? 'bg-green-100 text-green-600'
+                                : 'bg-red-100 text-red-600'
+                            "
+                          >
+                            {{ member.status }}
+                          </span>
+                        </td>
+
+                        <td class="px-4 py-3">
+                          <div class="flex items-center gap-4 text-gray-500">
+                            <i class="fas fa-pen cursor-pointer hover:text-blue-600"></i>
+                            <el-switch />
+                            <i class="fas fa-trash cursor-pointer text-red hover:text-red-600"></i>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </main>
+          </div>
         </v-tabs-window-item>
         <v-tabs-window-item value="api-keys"></v-tabs-window-item>
       </v-tabs-window>
@@ -607,7 +590,7 @@ onMounted(()=>{
 </template>
 
 <style scoped>
-  .custom-btn {
+.custom-btn {
   background-color: #1f5aa3;
   text-transform: none;
   text-transform: none;

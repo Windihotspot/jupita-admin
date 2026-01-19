@@ -51,9 +51,9 @@ const fetchTenantDetails = async (silent = false) => {
     console.log('tenant details data:', data)
 
     // Tenant info
-    const superAdmin = data.team.find((member) => member.title.toLowerCase() === 'super_admin')
+    // const superAdmin = data.team.find((member) => member.title.toLowerCase() === 'super_admin')
     tenant.value = {
-      name: superAdmin ? superAdmin.name : `${data.user.firstname} ${data.user.lastname}`,
+      name: data.tenant.business_name,
       activated: data.tenant.activated, // ✅ IMPORTANT
       startDate: moment(startDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),
       endDate: moment(endDate.value, 'DD/MM/YYYY').format('DD MMM YYYY'),

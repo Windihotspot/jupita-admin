@@ -21,6 +21,8 @@ const statuses = [
 const selectedStatus = ref('All')
 const itemsPerPage = ref(10)
 const currentPage = ref(1)
+const searchQuery = ref('')
+
 
 // 🔥 FETCH TENANTS FUNCTION
 const fetchTenants = async () => {
@@ -160,12 +162,23 @@ const formatDate = (dateStr) => {
 
 // FILTER SYSTEM
 const filteredTenants = computed(() => {
-  if (selectedStatus.value === 'All') return tenants.value
-  return tenants.value.filter(
-    (t) =>
+  return tenants.value.filter((t) => {
+    // Filter by status first
+    const statusMatch =
+      selectedStatus.value === 'All' ||
       (t.activated === 1 && selectedStatus.value === 'Active') ||
       (t.activated === 0 && selectedStatus.value === 'Inactive')
-  )
+
+    // Filter by search query
+    const query = searchQuery.value.toLowerCase()
+    const searchMatch =
+      t.name?.toLowerCase().includes(query) ||
+      t.tenant_id?.toString().toLowerCase().includes(query) ||
+      t.created_at?.toLowerCase().includes(query) ||
+      (t.activated === 1 ? 'active' : 'inactive').includes(query)
+
+    return statusMatch && searchMatch
+  })
 })
 
 // PAGINATION
@@ -320,6 +333,7 @@ const paginatedTenants = computed(() => {
           </el-select>
 
           <v-text-field
+          v-model="searchQuery"
             placeholder="Search by Tenant name"
             density="compact"
             hide-details
