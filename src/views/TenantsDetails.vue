@@ -402,11 +402,9 @@ onMounted(fetchTenantDetails)
         </div>
       </div>
 
-      <!-- USAGE CARDS -->
-
-      <div class="bg-white p-4 rounded shadow">
+      <div class="bg-white rounded p-4">
         <!-- <h2 class="font-semibold mb-4 text-sm">Usage</h2> -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div v-if="usage.length > 1" class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div
             v-for="(item, index) in usage"
             :key="index"
@@ -425,168 +423,208 @@ onMounted(fetchTenantDetails)
             <p class="text-md font-bold mt-2">{{ item.value }}</p>
           </div>
         </div>
-      </div>
-
-      <!-- ACCESS MANAGEMENT -->
-      <div class="bg-white p-6 rounded shadow">
-        <h2 class="font-semibold mb-4 tex-sm">Access Management</h2>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div
-            v-for="(item, index) in permissions"
-            :key="index"
-            class="flex items-center p-2 space-x-2"
-          >
-            <!-- Name -->
-            <span class="text-xs">{{ item.name }}</span>
-
-            <!-- Switch -->
-            <el-switch
-              :model-value="item.enabled"
-              :loading="item.loading"
-              :disabled="item.loading"
-              @change="() => toggleProductAvailability(item)"
-              style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
-            />
-          </div>
+        <div v-else class="text-center py-12 text-gray-400">
+          No usage data available for this tenant.
         </div>
       </div>
 
-      <!-- TEAM MANAGEMENT -->
-      <div class="bg-white p-6 rounded shadow">
-        <h2 class="font-semibold mb-4 text-sm">Team Management</h2>
-
-        <table class="w-full text-sm m-4">
-          <thead>
-            <tr class="font-semibold">
-              <th class="text-left py-2">Team Members</th>
-              <th class="text-left">Status</th>
-              <th class="text-left">Role</th>
-              <th class="text-left">Date Created</th>
-              <th class="text-center">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-for="(member, index) in team" :key="index" class="p-2">
-              <td class="py-2">{{ member.name }}</td>
-              <td>
-                <span :class="member.status === 'Active' ? 'text-green-500' : 'text-red-500'">
-                  {{ member.status }}
-                </span>
-              </td>
-              <td>{{ member.role }}</td>
-              <td>{{ member.date }}</td>
-              <td class="text-center space-x-6">
-                <!-- Edit -->
-                <el-tooltip content="Edit member" placement="top">
-                  <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
-                </el-tooltip>
-
-                <!-- Freeze / Unfreeze -->
-                <el-tooltip
-                  :content="member.isActive ? 'Freeze member' : 'Unfreeze member'"
-                  placement="top"
+      <!-- ACCESS MANAGEMENT -->
+      <v-expansion-panels>
+        <v-expansion-panel>
+          <v-expansion-panel-title> Access Management </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="p-2">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div
+                  v-for="(item, index) in permissions"
+                  :key="index"
+                  class="flex items-center p-2 space-x-2"
                 >
-                  <i
-                    :class="
-                      member.isActive ? 'fa fa-pause text-red-500' : 'fa fa-play text-green-500'
-                    "
-                    class="cursor-pointer"
-                    @click="toggleMemberStatus(member)"
-                  ></i>
-                </el-tooltip>
+                  <!-- Name -->
+                  <span class="text-xs">{{ item.name }}</span>
 
-                <!-- Delete -->
-                <el-tooltip content="Delete member" placement="top">
-                  <i
-                    class="fa fa-trash text-red-500 cursor-pointer"
-                    @click="deleteMember(member)"
-                  ></i>
-                </el-tooltip>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  <!-- Switch -->
+                  <el-switch
+                    :model-value="item.enabled"
+                    :loading="item.loading"
+                    :disabled="item.loading"
+                    @change="() => toggleProductAvailability(item)"
+                    style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+                  />
+                </div>
+              </div>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
+
+      <!-- TEAM MANAGEMENT -->
+      <v-expansion-panels>
+        <v-expansion-panel>
+          <v-expansion-panel-title> Team management </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="p-2">
+              <div class="p-2 max-h-[400px] overflow-y-auto">
+                <table class="w-full text-sm m-4">
+                  <thead>
+                    <tr class="font-semibold">
+                      <th class="text-left py-2">Team Members</th>
+                      <th class="text-left">Status</th>
+                      <th class="text-left">Role</th>
+                      <th class="text-left">Date Created</th>
+                      <th class="text-center">Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    <tr v-if="!team.length" class="text-center">
+                      <td colspan="5" class="py-6 text-gray-400">No team members found.</td>
+                    </tr>
+                    <tr v-for="(member, index) in team" :key="index" class="p-2">
+                      <td class="py-2">{{ member.name }}</td>
+                      <td>
+                        <span
+                          :class="member.status === 'Active' ? 'text-green-500' : 'text-red-500'"
+                        >
+                          {{ member.status }}
+                        </span>
+                      </td>
+                      <td>{{ member.role }}</td>
+                      <td>{{ member.date }}</td>
+                      <td class="text-center space-x-6">
+                        <!-- Edit -->
+                        <el-tooltip content="Edit member" placement="top">
+                          <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
+                        </el-tooltip>
+
+                        <!-- Freeze / Unfreeze -->
+                        <el-tooltip
+                          :content="member.isActive ? 'Freeze member' : 'Unfreeze member'"
+                          placement="top"
+                        >
+                          <i
+                            :class="
+                              member.isActive
+                                ? 'fa fa-pause text-red-500'
+                                : 'fa fa-play text-green-500'
+                            "
+                            class="cursor-pointer"
+                            @click="toggleMemberStatus(member)"
+                          ></i>
+                        </el-tooltip>
+
+                        <!-- Delete -->
+                        <el-tooltip content="Delete member" placement="top">
+                          <i
+                            class="fa fa-trash text-red-500 cursor-pointer"
+                            @click="deleteMember(member)"
+                          ></i>
+                        </el-tooltip>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
 
       <!-- SUBSCRIPTION & BILLING MANAGEMENT -->
-      <div class="bg-white p-6 rounded shadow mt-6">
-        <p class="font-semibold mb-4 text-sm">Subscription and Billing Management</p>
+      <v-expansion-panels>
+        <v-expansion-panel>
+          <v-expansion-panel-title> Subscription and billing </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="p-2 mt-2">
+              <table class="w-full text-sm m-4">
+                <thead>
+                  <tr class="text-semibold">
+                    <th class="text-left py-2">Service</th>
+                    <th class="text-left">Unit Price</th>
+                    <th class="text-left">Action</th>
+                  </tr>
+                </thead>
 
-        <table class="w-full text-sm m-4">
-          <thead>
-            <tr class="text-semibold">
-              <th class="text-left py-2">Service</th>
-              <th class="text-left">Unit Price</th>
-              <th class="text-left">Action</th>
-            </tr>
-          </thead>
+                <tbody>
+                  <tr v-if="!billing.length" class="text-center">
+                    <td colspan="3" class="py-6 text-gray-400">No billing data available.</td>
+                  </tr>
+                  <tr v-for="(item, index) in billing" :key="index" class="p-2">
+                    <td class="py-2">{{ item.service }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>
+                      <i
+                        class="fa fa-edit text-gray-500 cursor-pointer"
+                        @click="openPriceDialog(item)"
+                      ></i>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <v-dialog v-model="showPriceDialog" max-width="400">
+                <v-card class="">
+                  <p class="text-sm mx-6 my-4">
+                    Edit price for <span class="font-medium">{{ editingProduct?.service }}</span>
+                  </p>
 
-          <tbody>
-            <tr v-for="(item, index) in billing" :key="index" class="p-2">
-              <td class="py-2">{{ item.service }}</td>
-              <td>{{ item.price }}</td>
-              <td>
-                <i
-                  class="fa fa-edit text-gray-500 cursor-pointer"
-                  @click="openPriceDialog(item)"
-                ></i>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <v-dialog v-model="showPriceDialog" max-width="400">
-          <v-card class="">
-            <p class="text-sm mx-6 my-4">
-              Edit price for <span class="font-medium">{{ editingProduct?.service }}</span>
-            </p>
+                  <v-card-text>
+                    <v-text-field
+                      density="compact"
+                      v-model="newPrice"
+                      label="New Price"
+                      type="number"
+                      variant="outlined"
+                      dense
+                    />
+                  </v-card-text>
 
-            <v-card-text>
-              <v-text-field
-                density="compact"
-                v-model="newPrice"
-                label="New Price"
-                type="number"
-                variant="outlined"
-                dense
-              />
-            </v-card-text>
-
-            <v-card-actions class="justify-end">
-              <v-btn text @click="closePriceDialog">Cancel</v-btn>
-              <v-btn color="primary" :loading="savingPrice" @click="updateProductPrice">
-                Save
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-      </div>
+                  <v-card-actions class="justify-end">
+                    <v-btn text @click="closePriceDialog">Cancel</v-btn>
+                    <v-btn color="primary" :loading="savingPrice" @click="updateProductPrice">
+                      Save
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
 
       <!-- USAGE TABLE -->
-      <div class="bg-white p-6 rounded shadow mt-6">
-        <p class="font-semibold mb-4 text-sm">Usage</p>
+      <v-expansion-panels>
+        <v-expansion-panel>
+          <v-expansion-panel-title> Usage </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="p-2 mt-2">
+              <div class="p-2 max-h-[400px] overflow-y-auto">
+                <table class="w-full text-sm m-4">
+                  <thead>
+                    <tr class="text-semibold">
+                      <th class="text-left py-2">Date</th>
+                      <th class="text-left">Type</th>
+                      <th class="text-left">Amount</th>
+                      <th class="text-left">User</th>
+                    </tr>
+                  </thead>
 
-        <table class="w-full text-sm m-4">
-          <thead>
-            <tr class="text-semibold">
-              <th class="text-left py-2">Date</th>
-              <th class="text-left">Type</th>
-              <th class="text-left">Amount</th>
-              <th class="text-left">User</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-for="(u, index) in usageLogs" :key="index" class="p-2 hover:bg-blue-50">
-              <td class="py-2">{{ u.date }}</td>
-              <td>{{ u.type }}</td>
-              <td>{{ u.amount }}</td>
-              <td>{{ u.user }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  <tbody>
+                    <tr v-if="!usageLogs.length" class="text-center">
+                      <td colspan="4" class="py-6 text-gray-400">No usage transactions found.</td>
+                    </tr>
+                    <tr v-for="(u, index) in usageLogs" :key="index" class="p-2 hover:bg-blue-50">
+                      <td class="py-2">{{ u.date }}</td>
+                      <td>{{ u.type }}</td>
+                      <td>{{ u.amount }}</td>
+                      <td>{{ u.user }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
     </div>
   </MainLayout>
 </template>
