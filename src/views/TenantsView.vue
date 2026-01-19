@@ -67,12 +67,10 @@ const newTenant = ref({
 // VALIDATION RULES
 const rules = {
   required: (v) => !!v || 'This field is required',
-  email: (v) =>
-    !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Invalid email address',
-  phone: (v) =>
-    !v || /^[0-9+\-\s]{7,15}$/.test(v) || 'Invalid phone number',
+  email: (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Invalid email address',
+  phone: (v) => !v || /^[0-9+\-\s]{7,15}$/.test(v) || 'Invalid phone number',
 
-    password: (v) =>
+  password: (v) =>
     /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(v) ||
     'Min 8 chars, uppercase, lowercase, number & symbol'
 }
@@ -122,15 +120,11 @@ const createTenant = async () => {
   console.groupEnd()
 
   try {
-    const response = await ApiService.post(
-      '/create-new-tenant',
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        }
+    const response = await ApiService.post('/create-new-tenant', payload, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
       }
-    )
+    })
 
     // 🔍 LOG RESPONSE
     console.group('📥 CREATE TENANT RESPONSE')
@@ -149,14 +143,11 @@ const createTenant = async () => {
     console.log('Error:', err)
     console.groupEnd()
 
-    createError.value =
-      err.response?.data?.message || 'Failed to create tenant'
+    createError.value = err.response?.data?.message || 'Failed to create tenant'
   } finally {
     createLoading.value = false
   }
 }
-
-
 
 // RUN ON PAGE LOAD
 onMounted(() => {
@@ -186,105 +177,103 @@ const paginatedTenants = computed(() => {
 
 <template>
   <v-dialog v-model="showCreateDialog" max-width="520" persistent>
-  <v-card class="rounded-sm px-6 py-6 relative">
-    <!-- CLOSE ICON -->
-    <button
-      class="absolute top-4 right-4 text-gray-400 hover:text-red-600"
-      @click="showCreateDialog = false"
-    >
-      ✕
-    </button>
+    <v-card class="rounded-sm px-6 py-6 relative">
+      <!-- CLOSE ICON -->
+      <button
+        class="absolute top-4 right-4 text-gray-400 hover:text-red-600"
+        @click="showCreateDialog = false"
+      >
+        ✕
+      </button>
 
-    <!-- TITLE -->
-    <h2 class="text-sm font-bold mb-6">Create New Tenant</h2>
+      <!-- TITLE -->
+      <h2 class="text-sm font-bold mb-6">Create New Tenant</h2>
 
-    <v-form ref="createFormRef">
-      <div class="space-y-4">
-        <v-text-field
-          label="Company Name"
-          v-model="newTenant.company_name"
-          variant="outlined"
-          density="comfortable"
-          :rules="[rules.required]"
-        />
+      <v-form ref="createFormRef">
+        <div class="space-y-4">
+          <v-text-field
+            label="Company Name"
+            v-model="newTenant.company_name"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required]"
+          />
 
-        <v-text-field
-          label="Registration Number"
-          v-model="newTenant.registration_number"
-          variant="outlined"
-          density="comfortable"
-          :rules="[rules.required]"
-        />
+          <v-text-field
+            label="Registration Number"
+            v-model="newTenant.registration_number"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required]"
+          />
 
-        <v-text-field
-          label="Company Address"
-          v-model="newTenant.address"
-          variant="outlined"
-          density="comfortable"
-          :rules="[rules.required]"
-        />
+          <v-text-field
+            label="Company Address"
+            v-model="newTenant.address"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required]"
+          />
 
-        <v-text-field
-          label="Phone Number"
-          v-model="newTenant.phone"
-          variant="outlined"
-          density="comfortable"
-          :rules="[rules.required, rules.phone]"
-        />
+          <v-text-field
+            label="Phone Number"
+            v-model="newTenant.phone"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required, rules.phone]"
+          />
 
-        <v-text-field
-          label="Business Email Address"
-          v-model="newTenant.email"
-          variant="outlined"
-          density="comfortable"
-          :rules="[rules.required, rules.email]"
-        />
-        <v-text-field
-          label="Personal Email address"
-          v-model="newTenant.personal_email"
-          variant="outlined"
-          density="comfortable"
-          :rules="[rules.required, rules.email]"
-        />
-        <v-text-field
-          label="Password"
-          v-model="newTenant.password"
-          variant="outlined"
-          density="comfortable"
-          :rules="[rules.required, rules.password]"
-        />
+          <v-text-field
+            label="Business Email Address"
+            v-model="newTenant.email"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required, rules.email]"
+          />
+          <v-text-field
+            label="Personal Email address"
+            v-model="newTenant.personal_email"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required, rules.email]"
+          />
+          <v-text-field
+            label="Password"
+            v-model="newTenant.password"
+            variant="outlined"
+            density="comfortable"
+            :rules="[rules.required, rules.password]"
+          />
+        </div>
 
-        
-      </div>
+        <!-- ERROR -->
+        <p v-if="createError" class="text-red-600 text-sm mt-3">
+          {{ createError }}
+        </p>
 
-      <!-- ERROR -->
-      <p v-if="createError" class="text-red-600 text-sm mt-3">
-        {{ createError }}
-      </p>
+        <!-- ACTIONS -->
+        <div class="flex justify-end gap-3 mt-6">
+          <v-btn
+            color="error"
+            variant="plain"
+            class="normal-case"
+            @click="showCreateDialog = false"
+            :disabled="createLoading"
+          >
+            Cancel
+          </v-btn>
 
-      <!-- ACTIONS -->
-      <div class="flex justify-end gap-3 mt-6">
-        <v-btn
-        color="error"
-          variant="plain"
-          class="normal-case"
-          @click="showCreateDialog = false"
-          :disabled="createLoading"
-        >
-          Cancel
-        </v-btn>
-
-        <v-btn
-          class="custom-btn text-white normal-case"
-          :loading="createLoading"
-          @click="createTenant"
-        >
-          Create Tenant
-        </v-btn>
-      </div>
-    </v-form>
-  </v-card>
-</v-dialog>
+          <v-btn
+            class="custom-btn text-white normal-case"
+            :loading="createLoading"
+            @click="createTenant"
+          >
+            Create Tenant
+          </v-btn>
+        </div>
+      </v-form>
+    </v-card>
+  </v-dialog>
 
   <MainLayout>
     <div class="p-4 rounded shadow-sm bg-white m-4">
@@ -343,14 +332,11 @@ const paginatedTenants = computed(() => {
       </div>
     </div>
 
-     <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
-    
-         <LoadingOverlay :visible="loading" message="Loading tenants..." />
-      </div>
+    <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
+      <LoadingOverlay :visible="loading" message="Loading tenants..." />
+    </div>
 
     <div v-else class="p-4">
-     
-
       <div v-if="tenants.length > 0" class="overflow-x-auto">
         <table class="min-w-full">
           <thead class="font-semibold uppercase text-xs leading-normal">
@@ -374,7 +360,7 @@ const paginatedTenants = computed(() => {
                 {{ (currentPage - 1) * itemsPerPage + index + 1 }}
               </td>
 
-              <td class="py-3 px-6">{{formatDate(tenant.created_at) }}</td>
+              <td class="py-3 px-6">{{ formatDate(tenant.created_at) }}</td>
               <td class="py-3 px-6">{{ tenant.tenant_id }}</td>
               <td class="py-3 px-6">{{ tenant.name }}</td>
 
@@ -392,14 +378,15 @@ const paginatedTenants = computed(() => {
               </td>
 
               <td class="py-3 px-6 text-center">
-                <router-link 
-  :to="{ name: 'tenants-details', params: { tenantId: tenant.tenant_id } }"
->
-  <span class="bg-[#1f5aa3] text-white px-4 py-1 rounded hover:bg-blue-600 cursor-pointer">
-    View
-  </span>
-</router-link>
-
+                <router-link
+                  :to="{ name: 'tenants-details', params: { tenantId: tenant.tenant_id } }"
+                >
+                  <span
+                    class="bg-[#1f5aa3] text-white px-4 py-1 rounded hover:bg-blue-600 cursor-pointer"
+                  >
+                    View
+                  </span>
+                </router-link>
               </td>
             </tr>
           </tbody>
@@ -442,9 +429,9 @@ const paginatedTenants = computed(() => {
 </template>
 
 <style scoped>
-  .v-btn{
-    text-transform: none;
-  }
+.v-btn {
+  text-transform: none;
+}
 .pagination-custom .v-pagination__item {
   border-radius: 50% !important;
 }

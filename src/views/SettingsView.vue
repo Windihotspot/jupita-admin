@@ -1,8 +1,144 @@
 <script setup>
-import { ref } from 'vue'
+  import ApiService from '@/services/api'
+import { ref, onMounted } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 const tab = ref('products')
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
+console.log("auth:", auth)
+const productsLoading = ref(false)
+const productsError = ref(null)
+const products = ref([])
+
+const fetchProducts = async () => {
+  productsLoading.value = true
+  productsError.value = null
+
+  console.group('📤 GET PRODUCTS REQUEST')
+  console.log('URL:', '/get-products')
+  console.log('Method:', 'GET')
+  console.groupEnd()
+
+  try {
+    const response = await ApiService.get('/get-products', {
+       headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+
+    console.group('📥 GET PRODUCTS RESPONSE')
+    console.log('Status:', response.status)
+    console.log('Data:', response.data)
+    console.groupEnd()
+
+    products.value = response.data?.products || response.data || []
+
+  } catch (err) {
+    console.group('❌ GET PRODUCTS ERROR')
+    console.log('Status:', err.response?.status)
+    console.log('Data:', err.response?.data)
+    console.log('Error:', err)
+    console.groupEnd()
+
+    productsError.value =
+      err.response?.data?.message || 'Failed to load products'
+  } finally {
+    productsLoading.value = false
+  }
+}
+
+
+const showCreateDialog = ref(false)
+const createLoading = ref(false)
+const createError = ref(null)
+
+const createFormRef = ref(null)
+
+const newAdmin = ref({
+  firstname: '',
+  lastname: '',
+  email: '',
+  phone: '',
+  password: '',
+  role: 'admin'
+})
+
+
+// VALIDATION RULES
+const rules = {
+  required: (v) => !!v || 'This field is required',
+  email: (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Invalid email address',
+  phone: (v) => !v || /^[0-9+\-\s]{7,15}$/.test(v) || 'Invalid phone number',
+
+  password: (v) =>
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(v) ||
+    'Min 8 chars, uppercase, lowercase, number & symbol'
+}
+
+// RESET FORM
+const resetCreateForm = () => {
+  newAdmin.value = {
+    firstname: '',
+    lastname: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'admin'
+  }
+
+  createError.value = null
+  createFormRef.value?.resetValidation()
+}
+
+
+const createAdmin = async () => {
+  const { valid } = await createFormRef.value.validate()
+  if (!valid) return
+
+  createLoading.value = true
+  createError.value = null
+
+  const payload = {
+    firstname: newAdmin.value.firstname,
+    lastname: newAdmin.value.lastname,
+    email: newAdmin.value.email,
+    phone: newAdmin.value.phone,
+    password: newAdmin.value.password,
+    role: 'admin'
+  }
+
+  console.group('📤 CREATE ADMIN REQUEST')
+  console.log('URL:', '/create-admin')
+  console.log('Method:', 'POST')
+  console.log('Payload:', payload)
+  console.groupEnd()
+
+  try {
+    const response = await ApiService.post('/create-admin', payload)
+
+    console.group('📥 CREATE ADMIN RESPONSE')
+    console.log('Status:', response.status)
+    console.log('Data:', response.data)
+    console.groupEnd()
+
+    showCreateDialog.value = false
+    resetCreateForm()
+    // optionally refresh admins list here
+
+  } catch (err) {
+    console.group('❌ CREATE ADMIN ERROR')
+    console.log('Status:', err.response?.status)
+    console.log('Data:', err.response?.data)
+    console.log('Error:', err)
+    console.groupEnd()
+
+    createError.value =
+      err.response?.data?.message || 'Failed to create admin'
+  } finally {
+    createLoading.value = false
+  }
+}
 
 const router = useRouter()
 
@@ -34,45 +170,179 @@ const team = ref([
   { id: 4, name: 'Ifiok 😄', role: 'Admin', status: 'Active' },
 ])
 
-const products = ref([
-  {
-    id: 1,
-    name: 'Loan Origination',
-    status: 'Inactive',
-    global: false
-  },
-  {
-    id: 2,
-    name: 'Credit Search',
-    status: 'Active',
-    global: true
-  },
-  {
-    id: 3,
-    name: 'Analyze',
-    status: 'Active',
-    global: true
-  },
-  {
-    id: 4,
-    name: 'ID Verification',
-    status: 'Active',
-    global: true
+// ----------------------
+// TOGGLE PRODUCT FEATURE
+// ----------------------
+const toggleLoadingMap = ref({})
+
+const toggleProductStatus = async (product) => {
+  const productId = product.id
+
+  // store previous state (for rollback)
+  const previousState = product.global
+
+  toggleLoadingMap.value[productId] = true
+
+  const payload = {
+    globally: product.global,
+    product_name: product.name,
+    status: product.global ? 'on' : 'off',
+    tenant_id: auth.tenant_id
   }
-])
+
+  console.group('📤 TOGGLE FEATURE REQUEST')
+  console.log('URL:', '/toggle-feature-status')
+  console.log('Payload:', payload)
+  console.groupEnd()
+
+  try {
+    const response = await ApiService.post(
+      '/toggle-feature-status',
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${auth.token}`
+        }
+      }
+    )
+
+    console.group('📥 TOGGLE FEATURE RESPONSE')
+    console.log('Status:', response.status)
+    console.log('Data:', response.data)
+    console.groupEnd()
+
+    // update UI status label if backend responds successfully
+    product.status = product.global ? 'Active' : 'Inactive'
+
+  } catch (err) {
+    console.group('❌ TOGGLE FEATURE ERROR')
+    console.log('Status:', err.response?.status)
+    console.log('Data:', err.response?.data)
+    console.log('Error:', err)
+    console.groupEnd()
+
+    // rollback switch
+    product.global = previousState
+  } finally {
+    toggleLoadingMap.value[productId] = false
+  }
+}
+
+onMounted(()=>{
+  fetchProducts()
+})
 </script>
 
 
 <template>
+    <v-dialog v-model="showCreateDialog" max-width="520" persistent>
+    <v-card class="rounded-sm px-6 py-6 relative">
+      <!-- CLOSE ICON -->
+      <button
+        class="absolute top-4 right-4 text-gray-400 hover:text-red-600"
+        @click="showCreateDialog = false"
+      >
+        ✕
+      </button>
+
+      <!-- TITLE -->
+      <h2 class="text-sm font-bold mb-6">Create New Admin</h2>
+
+      <v-form ref="createFormRef">
+  <div class="space-y-4">
+
+    <v-text-field
+      label="First Name"
+      v-model="newAdmin.firstname"
+      variant="outlined"
+      density="comfortable"
+      :rules="[rules.required]"
+    />
+
+    <v-text-field
+      label="Last Name"
+      v-model="newAdmin.lastname"
+      variant="outlined"
+      density="comfortable"
+      :rules="[rules.required]"
+    />
+
+    <v-text-field
+      label="Email Address"
+      v-model="newAdmin.email"
+      variant="outlined"
+      density="comfortable"
+      :rules="[rules.required, rules.email]"
+    />
+
+    <v-text-field
+      label="Phone Number"
+      v-model="newAdmin.phone"
+      variant="outlined"
+      density="comfortable"
+      :rules="[rules.required, rules.phone]"
+    />
+
+    <v-text-field
+      label="Password"
+      v-model="newAdmin.password"
+      type="password"
+      variant="outlined"
+      density="comfortable"
+      :rules="[rules.required, rules.password]"
+    />
+
+  </div>
+
+  <!-- ERROR -->
+  <p v-if="createError" class="text-red-600 text-sm mt-3">
+    {{ createError }}
+  </p>
+
+  <!-- ACTIONS -->
+  <div class="flex justify-end gap-3 mt-6">
+    <v-btn
+      color="error"
+      variant="plain"
+      class="normal-case"
+      @click="showCreateDialog = false"
+      :disabled="createLoading"
+    >
+      Cancel
+    </v-btn>
+
+    <v-btn
+      class="custom-btn text-white normal-case"
+      :loading="createLoading"
+      @click="createAdmin"
+    >
+      Create Admin
+    </v-btn>
+  </div>
+</v-form>
+
+    </v-card>
+  </v-dialog>
   <MainLayout>
     <div class="p-4 rounded shadow-sm bg-white m-4">
-      <div class="items-center border-b p-2 mb-6">
+      <div class="items-center border-b p-2 mb-6 flex justify-between">
         <div class="mb-2">
           <h1 class="text-xl font-bold text-gray-900">Settings</h1>
           <p class="text-gray-500 text-sm mt-1">Manage platform wide configurations</p>
         </div>
 
-       
+         <v-btn
+          @click="showCreateDialog = true"
+          size="large"
+          class="normal-case custom-btn hover:bg-blue-700 text-white text-sm font-semibold px-6 py-3 rounded-md shadow-md"
+        >
+          <span
+            class="bg-white text-blue-600 rounded-full p-1 flex items-center justify-center w-4 h-4 mr-2"
+          >
+            <i class="fa-solid fa-plus text-sm text-[#1f5aa3]"></i>
+          </span>
+          Add New 
+        </v-btn>
       </div>
        <v-tabs v-model="tab" density="compact">
         <v-tab
@@ -185,7 +455,14 @@ const products = ref([
 
                   <!-- Global Control -->
                   <td class="px-4 py-3">
-                    <el-switch v-model="product.global" active-color="green" inactive-color="red" />
+                    <el-switch
+  v-model="product.global"
+  :loading="toggleLoadingMap[product.id]"
+  active-color="#16a34a"
+  inactive-color="#dc2626"
+  @change="() => toggleProductStatus(product)"
+/>
+
                   </td>
                 </tr>
               </tbody>
@@ -330,6 +607,11 @@ const products = ref([
 </template>
 
 <style scoped>
+  .custom-btn {
+  background-color: #1f5aa3;
+  text-transform: none;
+  text-transform: none;
+}
 .v-slider {
   --v-slider-track-size: 4px;
   --v-slider-thumb-size: 12px;

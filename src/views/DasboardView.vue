@@ -7,91 +7,79 @@
         <p class="text-xs text-gray">View what matters</p>
       </div>
 
-      <hr>
+      <hr />
 
       <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
-    
-         <LoadingOverlay :visible="loading" message="Loading dashboard..." />
+        <LoadingOverlay :visible="loading" message="Loading dashboard..." />
       </div>
       <div v-else>
         <div class="m-4">
-      
+          <!-- Date Filter -->
+          <div class="m-4 flex items-center gap-4">
+            <i class="fa-solid fa-filter pr-4 text-blue"></i>
 
+            <!-- Start Date -->
+            <el-date-picker
+              v-model="startDate"
+              type="date"
+              placeholder="Start date"
+              :default-value="null"
+              @change="fetchDashboardData"
+            />
+
+            <!-- End Date -->
+            <el-date-picker
+              v-model="endDate"
+              type="date"
+              placeholder="End date"
+              :default-value="null"
+              @change="fetchDashboardData"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="p-4 rounded-lg bg-blue-50">
+          <p class="text-gray-700">Total Number of Tenants</p>
+          <h2 class="text-sm mt-6 font-bold">{{ stats.total }}</h2>
+        </div>
+        <div class="p-4 rounded-lg bg-green-50">
+          <p class="text-gray-700">Active Tenants</p>
+          <h2 class="text-sm mt-6 font-bold">{{ stats.active }}</h2>
+        </div>
+        <div class="p-4 rounded-lg bg-pink-50">
+          <p class="text-gray-700">Inactive Tenants</p>
+          <h2 class="text-sm mt-6 font-bold">{{ stats.inactive }}</h2>
+        </div>
+        <div class="p-4 rounded-lg bg-orange-50">
+          <p class="text-gray-700">Tenants Pending Approval</p>
+          <h2 class="text-sm mt-6 font-bold">{{ stats.pending }}</h2>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="bg-white p-4 rounded-lg shadow">
         <!-- Date Filter -->
         <div class="m-4 flex items-center gap-4">
-  <i class="fa-solid fa-filter pr-4 text-blue"></i>
+          <i class="fa-solid fa-filter pr-4 text-blue"></i>
 
-  <!-- Start Date -->
-  <el-date-picker
-    v-model="startDate"
-    type="date"
-    placeholder="Start date"
-    :default-value="null"
-    @change="fetchDashboardData"
-  />
-
-  <!-- End Date -->
-  <el-date-picker
-    v-model="endDate"
-    type="date"
-    placeholder="End date"
-    :default-value="null"
-    @change="fetchDashboardData"
-  />
-</div>
-
+          <!-- products-->
+          <el-select
+            v-model="selectedProductName"
+            size="large"
+            placeholder="Filter by product"
+            clearable
+            style="width: 200px"
+            class="flex justify-end"
+          >
+            <el-option v-for="cls in products" :key="cls.id" :label="cls.name" :value="cls.name" />
+          </el-select>
+        </div>
+        <apexchart :key="chartKey" type="bar" :options="chartOptions" :series="chartSeries" height="350" />
       </div>
     </div>
-
-    <!-- Summary Cards -->
-    <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div class="p-4 rounded-lg bg-blue-50">
-        <p class="text-gray-700">Total Number of Tenants</p>
-        <h2 class="text-sm mt-6 font-bold">{{ stats.total }}</h2>
-      </div>
-      <div class="p-4 rounded-lg bg-green-50">
-        <p class="text-gray-700">Active Tenants</p>
-        <h2 class="text-sm mt-6 font-bold">{{ stats.active }}</h2>
-      </div>
-      <div class="p-4 rounded-lg bg-pink-50">
-        <p class="text-gray-700">Inactive Tenants</p>
-        <h2 class="text-sm mt-6 font-bold">{{ stats.inactive }}</h2>
-      </div>
-      <div class="p-4 rounded-lg bg-orange-50">
-        <p class="text-gray-700">Tenants Pending Approval</p>
-        <h2 class="text-sm mt-6 font-bold">{{ stats.pending }}</h2>
-      </div>
-    </div>
-
-    <!-- Chart -->
-    <div class="bg-white p-4 rounded-lg shadow">
-      <!-- Date Filter -->
-        <div class="m-4 flex items-center gap-4">
-  <i class="fa-solid fa-filter pr-4 text-blue"></i>
-
-  <!-- products-->
-         <el-select
-                      v-model="selectedProductName"
-                      size="large"
-                      placeholder="Filter by product"
-                      clearable
-                      style="width: 200px"
-                      class="flex justify-end"
-                    >
-                      <el-option
-                        v-for="cls in products"
-                        :key="cls.id"
-                        :label="cls.name"
-                        :value="cls.name"
-                      />
-                    </el-select>
-</div>
-      <apexchart type="bar" :options="chartOptions" :series="chartSeries" height="350" />
-    </div>
-      </div>
-
-      
-
   </MainLayout>
 </template>
 
@@ -133,24 +121,23 @@ const products = [
 
 // Map frontend product names to backend keys
 const productMap = {
-  'Analyze': 'analysis',
+  'Analyze': 'periculum_analysis',
   'Credit Search': 'credit_history',
-  'Originate': 'loans',
+  'Originate': 'loan',
   'Verify': 'id_verification'
 }
 
 // ───────────────────────────────
 // DASHBOARD STATS
 // ───────────────────────────────
+
+
 const stats = reactive({
-  total: auth.tenants,
-  active: auth.active_tenants,
-  inactive: auth.inactive_tenants,
+  total: 0,
+  active: 0,
+  inactive: 0,
   pending: 0,
-  analysis: auth.analysis || [],
-  loans: auth.loans || [],
-  id_verification: auth.id_verification || [],
-  credit_history: auth.credit_history || []
+  rawStats: {}
 })
 
 // ───────────────────────────────
@@ -159,69 +146,71 @@ const stats = reactive({
 const chartOptions = reactive({
   chart: { id: 'dashboard-chart' },
   colors: ['#1e40af'],
-   plotOptions: {
-    bar: {
-      columnWidth: '5%', // default is '70%', smaller % = thinner bars
-      distributed: false,  // if you want each bar a different color
-      borderRadius: 4     // optional, rounds corners
-    }
-  },
+  plotOptions: {
+  bar: {
+    columnWidth: '10%',
+    borderRadius: 4
+  }
+}
+,
   dataLabels: {
     enabled: false,
     position: 'top',
     style: { fontSize: '12px', colors: ['#000'] }
   },
-  xaxis: { categories: [] },
+  xaxis: {
+  categories: [],
+  labels: {
+    show: true,
+    rotate: -45,
+    trim: false,
+    style: {
+      fontSize: '12px'
+    }
+  }
+}
+,
   yaxis: { show: true },
   grid: { yaxis: { lines: { show: false } } }
 })
 
+const chartKey = ref(0)
+
+
 const chartSeries = reactive([{ name: 'Count', data: [] }])
 
-// ───────────────────────────────
-// INITIAL CHART (all products merged)
-// ───────────────────────────────
-const mergeAllProducts = () => {
-  return [
-    ...(stats.analysis || []),
-    ...(stats.loans || []),
-    ...(stats.id_verification || []),
-    ...(stats.credit_history || [])
-  ]
+const buildChartFromStats = () => {
+  if (!selectedProductName.value) return
+
+  const backendKey = productMap[selectedProductName.value]
+  const categories = []
+  const data = []
+
+  Object.entries(stats.rawStats).forEach(([tenantName, products]) => {
+    categories.push(tenantName)
+    data.push(products?.[backendKey] ?? 0)
+  })
+
+  Object.assign(chartOptions.xaxis, { categories })
+
+  chartSeries.splice(0, 1, {
+    name: selectedProductName.value,
+    data
+  })
+
+  chartKey.value++ // 🔥 FORCE RE-RENDER
 }
 
-const setChartData = (dataArray) => {
-  // Replace the entire xaxis object so ApexCharts detects the change
-  chartOptions.xaxis = {
-    ...chartOptions.xaxis,
-    categories: dataArray.map(i => i.business_name)
-  }
 
-  // Replace the series entirely to force re-render
-  chartSeries.splice(0, chartSeries.length, { name: 'Count', data: dataArray.map(i => i.count) })
-}
-
-
-// initialize chart
-setChartData(mergeAllProducts())
-
-// ───────────────────────────────
-// UPDATE CHART BASED ON PRODUCT SELECTION
-// ───────────────────────────────
-const updateChartByProduct = () => {
-  if (!selectedProductName.value) {
-    setChartData(mergeAllProducts())
+watch(selectedProductName, (newVal) => {
+  if (!newVal) {
+    chartSeries.splice(0, 1, { name: '', data: [] })
     return
   }
-  const key = productMap[selectedProductName.value]
-  const productData = stats[key] || []
-  setChartData(productData)
-}
 
-// Watch product selection
-watch(selectedProductName, () => {
-  updateChartByProduct()
+  buildChartFromStats()
 })
+
 
 // ───────────────────────────────
 // FETCH DASHBOARD DATA BY DATE
@@ -230,6 +219,7 @@ const fetchDashboardData = async () => {
   if (!startDate.value || !endDate.value) return
 
   loading.value = true
+
   const payload = {
     start_date: moment(startDate.value).format('DD/MM/YYYY'),
     end_date: moment(endDate.value).format('DD/MM/YYYY')
@@ -237,50 +227,33 @@ const fetchDashboardData = async () => {
 
   try {
     const res = await ApiService.post('/filter-dashboard-data-by-date', payload)
-    console.log("filter dashboard by date:", res)
     const d = res.data
-    
-    // Update totals
+console.log('Dashboard fetch dashboard data by date:', res)
+    // summary cards
     stats.total = d.tenants
     stats.active = d.active_tenants
     stats.inactive = d.inactive_tenants
     stats.pending = 0
 
-    // Update product arrays
-    stats.analysis = d.analysis || []
-    stats.loans = d.loans || []
-    stats.id_verification = d.id_verification || []
-    stats.credit_history = d.credit_history || []
+    // store raw stats
+    stats.rawStats = d.stats || {}
 
-     // If no product selected, default to 'Analyze'
+    // default product
     if (!selectedProductName.value) {
       selectedProductName.value = 'Analyze'
-    } else {
-      updateChartByProduct()
     }
+
+    buildChartFromStats()
   } catch (err) {
-    console.error('Dashboard fetch error:', err)
+    console.log('Dashboard fetch error:', err)
   } finally {
     loading.value = false
   }
 }
 
+
 onMounted(() => {
-  // Determine default product based on available data
-  if (stats.analysis?.length) {
-    selectedProductName.value = 'Analyze'
-  } else if (stats.credit_history?.length) {
-    selectedProductName.value = 'Credit Search'
-  } else if (stats.loans?.length) {
-    selectedProductName.value = 'Originate'
-  } else if (stats.id_verification?.length) {
-    selectedProductName.value = 'Verify'
-  }
 
-  // Initialize chart with the selected product
-  updateChartByProduct()
+
 })
-
-
 </script>
-
