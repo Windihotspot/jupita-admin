@@ -10,7 +10,6 @@ import AccountsView from '@/views/AccountsView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    
     {
       path: '/',
       name: 'login',
@@ -38,7 +37,7 @@ const router = createRouter({
       component: SettingsView
     },
     {
-      path: '/settings/products/:slug',
+      path: '/settings/products/:productId',
       name: 'product-details',
       component: ProductDetails,
       props: true

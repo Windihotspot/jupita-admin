@@ -142,10 +142,7 @@ const createAdmin = async () => {
 
 const router = useRouter()
 
-const goToProduct = (product) => {
-  const slug = product.name.toLowerCase().replace(/\s+/g, '-')
-  router.push(`/settings/products/${slug}`)
-}
+
 
 const tabs = [
   { label: 'Products', value: 'products' },
@@ -345,6 +342,12 @@ const personalTitle = computed(() => {
   return role ? `${role.title} Profile` : 'Personal Information'
 })
 
+const fullName = computed(() => {
+  const first = user?.firstname || ''
+  const last = user?.lastname || ''
+  return `${first} ${last}`.trim()
+})
+
 onMounted(async () => {
   selectedRoleId.value = auth.user.role_id
   await fetchProducts()
@@ -353,6 +356,16 @@ onMounted(async () => {
   fetchAdminMembers()
   fetchRoles()
 })
+
+const goToProduct = (product) => {
+  router.push({
+    name: 'product-details',
+    params: {
+      productId: product.id
+    }
+  })
+}
+
 </script>
 
 <template>
@@ -638,7 +651,7 @@ onMounted(async () => {
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                   <v-text-field
-                    v-model="user.firstname"
+                     :model-value="fullName"
                     label="Full name"
                     variant="outlined"
                     density="comfortable"
