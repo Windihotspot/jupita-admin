@@ -366,7 +366,7 @@ const fetchRoles = async () => {
         Authorization: `Bearer ${auth.token}`
       }
     })
-
+    console.log("response:", response)
   roles.value = response.data.roles.map((role) => ({
       title: role.title
     }))

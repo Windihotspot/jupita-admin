@@ -1,14 +1,15 @@
 <script setup>
-  import LoadingOverlay from '@/components/LoadingOverlay.vue'
+import LoadingOverlay from '@/components/LoadingOverlay.vue'
 import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
 import ApiService from '@/services/api'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 const tab = ref('products')
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore()
-console.log('auth:', auth)
+const user = auth?.user
+console.log('user:', user)
 const productsLoading = ref(false)
 const productsError = ref(null)
 const products = ref([])
@@ -153,7 +154,8 @@ const tabs = [
 ]
 const activeTab = ref('profile')
 
-const roles = ['Super Admin', 'Admin', 'User']
+const roles = ref([])
+const selectedRoleId = ref(null)
 
 const profile = ref({
   fullname: 'Williams Adeyemi',
@@ -161,7 +163,6 @@ const profile = ref({
   email: 'wadeyemi@getjupita.com',
   role: 'Super Admin'
 })
-
 
 // ----------------------
 // TOGGLE PRODUCT FEATURE
@@ -314,19 +315,43 @@ const fetchAdminMembers = async () => {
     console.log('Error:', err)
     console.groupEnd()
 
-    teamError.value =
-      err.response?.data?.message || 'Failed to load admin members'
+    teamError.value = err.response?.data?.message || 'Failed to load admin members'
   } finally {
     teamLoading.value = false
   }
 }
 
+const fetchRoles = async () => {
+  try {
+    const response = await ApiService.get('/fetch-roles-with-permissions', {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+    console.log('roles response:', response)
+    roles.value = response.data.roles.map((role) => ({
+      id: role.id,
+      title: role.title
+    }))
+    console.log('Roles:', roles.value)
+  } catch (err) {
+    console.log('Error:', err)
+    console.groupEnd()
+  }
+}
+
+const personalTitle = computed(() => {
+  const role = roles.value.find((r) => r.id === selectedRoleId.value)
+  return role ? `${role.title} Profile` : 'Personal Information'
+})
 
 onMounted(async () => {
+  selectedRoleId.value = auth.user.role_id
   await fetchProducts()
   await fetchFeatureStatus()
   mergeProductsWithStatus()
   fetchAdminMembers()
+  fetchRoles()
 })
 </script>
 
@@ -491,9 +516,12 @@ onMounted(async () => {
           </div>
 
           <div class="bg-white rounded-lg shadow overflow-hidden mt-4">
-            <div v-if="productsLoading" class="flex flex-col items-center justify-center min-h-[200px]">
-        <LoadingOverlay :visible="productsLoading" message="Loading products..." />
-      </div>
+            <div
+              v-if="productsLoading"
+              class="flex flex-col items-center justify-center min-h-[200px]"
+            >
+              <LoadingOverlay :visible="productsLoading" message="Loading products..." />
+            </div>
             <table v-else class="min-w-full border-collapse">
               <!-- Header -->
               <thead class="bg-gray-50 border-b">
@@ -601,35 +629,48 @@ onMounted(async () => {
             <main class="flex-1 m-4 p-8">
               <!-- ================= PERSONAL INFORMATION ================= -->
               <section v-if="activeTab === 'profile'">
-                <p class="text-sm font-semibold mb-6">Personal Information</p>
+                <div class="flex justify-between">
+                  <p class="text-sm font-semibold mb-6">Personal Information</p>
+                <v-chip
+  color="primary"
+  variant="tonal"
+  size="small"
+  class="mb-6 font-semibold"
+>
+  {{ personalTitle }}
+</v-chip>
+
+                </div>
+                
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                   <v-text-field
-                    v-model="profile.fullname"
+                    v-model="user.firstname"
                     label="Full name"
                     variant="outlined"
                     density="comfortable"
                   />
 
                   <v-text-field
-                    v-model="profile.phone"
+                    v-model="user.phone"
                     label="Phone number"
                     variant="outlined"
                     density="comfortable"
                   />
 
                   <v-text-field
-                    v-model="profile.email"
+                    v-model="user.email"
                     label="Email address"
                     variant="outlined"
                     density="comfortable"
-                    disabled
                   />
 
                   <v-select
-                    v-model="profile.role"
+                    v-model="selectedRoleId"
                     label="Role"
                     :items="roles"
+                    item-title="title"
+                    item-value="id"
                     variant="outlined"
                     density="comfortable"
                   />
