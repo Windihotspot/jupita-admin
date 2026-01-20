@@ -348,11 +348,129 @@ const updateProductPrice = async () => {
   }
 }
 
-onMounted(fetchTenantDetails)
+// ----- Roles -----
+const roles = ref([])
+
+// ----- Edit Role Dialog -----
+const showRoleDialog = ref(false)
+const selectedMember = ref(null)
+const selectedRole = ref('')
+const updatingRole = ref(false)
+
+
+const fetchRoles = async () => {
+
+  try {
+    const response = await ApiService.get('/fetch-roles-with-permissions', {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+
+  roles.value = response.data.roles.map((role) => ({
+      title: role.title
+    }))
+
+    console.log('Roles:', roles.value)
+
+  } catch (err) {
+    console.log('Error:', err)
+    console.groupEnd()
+  }
+}
+
+const openEditRoleDialog = (member) => {
+  selectedMember.value = member
+  selectedRole.value = member.role
+  showRoleDialog.value = true
+}
+
+const closeRoleDialog = () => {
+  selectedMember.value = null
+  selectedRole.value = ''
+  showRoleDialog.value = false
+}
+
+const updateUserRole = async () => {
+  if (!selectedMember.value || !selectedRole.value) return
+
+  updatingRole.value = true
+  const token = localStorage.getItem('token')
+
+  const payload = {
+    tenant_id: tenantId.value,
+    user_id: selectedMember.value.id,
+    new_role_title: selectedRole.value
+  }
+
+  console.log('Update role payload:', payload)
+
+  try {
+    await ApiService.put('/update-user-role', payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    ElNotification({
+      message: `${selectedMember.value.name}'s role updated successfully`,
+      type: 'success',
+      duration: 3000
+    })
+
+    closeRoleDialog()
+    await fetchTenantDetails(true)
+  } catch (err) {
+    ElNotification({
+      title: 'Error',
+      message: err.response?.data?.message || 'Failed to update role',
+      type: 'error'
+    })
+  } finally {
+    updatingRole.value = false
+  }
+}
+
+
+onMounted(() => {
+  fetchTenantDetails()
+  fetchRoles()
+}
+)
 </script>
 
 <template>
   <MainLayout>
+    <el-dialog v-model="showRoleDialog" width="400px">
+  <div class="space-y-4">
+    <p class="text-sm">
+      Updating role for <strong>{{ selectedMember?.name }}</strong>
+    </p>
+
+    <el-select
+      v-model="selectedRole"
+      placeholder="Select role"
+      class="w-full"
+    >
+      <el-option
+        v-for="role in roles"
+        :key="role.title"
+        :label="role.title"
+        :value="role.title"
+      />
+    </el-select>
+  </div>
+
+  <template #footer>
+    <el-button @click="closeRoleDialog">Cancel</el-button>
+    <el-button
+      type="primary"
+      :loading="updatingRole"
+      @click="updateUserRole"
+    >
+      Update
+    </el-button>
+  </template>
+</el-dialog>
+
     <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
       <LoadingOverlay :visible="loading" message="Loading data..." />
     </div>
@@ -463,6 +581,7 @@ onMounted(fetchTenantDetails)
         <v-expansion-panel>
           <v-expansion-panel-title> Team management </v-expansion-panel-title>
           <v-expansion-panel-text>
+            
             <div class="p-2">
               <div class="p-2 max-h-[400px] overflow-y-auto">
                 <table class="w-full text-sm m-4">
@@ -494,7 +613,7 @@ onMounted(fetchTenantDetails)
                       <td class="text-center space-x-6">
                         <!-- Edit -->
                         <el-tooltip content="Edit member" placement="top">
-                          <i class="fa fa-edit text-gray-500 cursor-pointer"></i>
+                          <i @click="openEditRoleDialog(member)" class="fa fa-edit text-gray-500 cursor-pointer"></i>
                         </el-tooltip>
 
                         <!-- Freeze / Unfreeze -->

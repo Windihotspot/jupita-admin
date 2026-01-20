@@ -1,4 +1,5 @@
 <script setup>
+  import LoadingOverlay from '@/components/LoadingOverlay.vue'
 import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
 import ApiService from '@/services/api'
 import { ref, onMounted } from 'vue'
@@ -161,12 +162,6 @@ const profile = ref({
   role: 'Super Admin'
 })
 
-const team = ref([
-  { id: 1, name: 'Adeyemi Williams', role: 'Super Admin', status: 'Inactive' },
-  { id: 2, name: 'Anthony Oboli', role: 'Super Admin', status: 'Active' },
-  { id: 3, name: 'Faramni Power Bank', role: 'Admin', status: 'Active' },
-  { id: 4, name: 'Ifiok 😄', role: 'Admin', status: 'Active' }
-])
 
 // ----------------------
 // TOGGLE PRODUCT FEATURE
@@ -221,8 +216,117 @@ const toggleProductStatus = async (product) => {
   }
 }
 
-onMounted(() => {
-  fetchProducts()
+const featureStatus = ref(null)
+
+const fetchFeatureStatus = async () => {
+  console.group('📤 GET FEATURE STATUS REQUEST')
+  console.log('URL:', '/get-feature-status')
+  console.groupEnd()
+
+  try {
+    const response = await ApiService.get('/get-feature-status', {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+
+    console.group('📥 GET FEATURE STATUS RESPONSE')
+    console.log('Status:', response.status)
+    console.log('Data:', response.data)
+    console.groupEnd()
+
+    featureStatus.value = response.data?.data?.feature_status || null
+  } catch (err) {
+    console.group('❌ GET FEATURE STATUS ERROR')
+    console.log('Status:', err.response?.status)
+    console.log('Data:', err.response?.data)
+    console.log('Error:', err)
+    console.groupEnd()
+  }
+}
+
+const PRODUCT_FEATURE_MAP = {
+  CRC: 'crc',
+  'Credit Registry': 'credit_registry',
+  FCCB: 'fccb',
+  'Mono Bank Statement Analysis': 'mono_bank_statement_analysis',
+  'Offer Recommendation': 'offer_recommendation',
+  'Periculum Bank Statement Analysis': 'periculum_bank_statement_analysis',
+  'Smile ID Verification': 'smile_id_verification',
+  'Zeeh Africa ID Verification': 'zeeh_africa_id_verification',
+  'Loan Origination': 'loan_origination'
+}
+
+const mergeProductsWithStatus = () => {
+  if (!featureStatus.value) return
+
+  products.value = products.value.map((product) => {
+    const featureKey = PRODUCT_FEATURE_MAP[product.name]
+
+    if (!featureKey) {
+      return {
+        ...product,
+        status: 'Inactive',
+        global: false
+      }
+    }
+
+    const isOn = featureStatus.value[featureKey] === 'on'
+
+    return {
+      ...product,
+      global: isOn,
+      status: isOn ? 'Active' : 'Inactive'
+    }
+  })
+}
+
+const teamLoading = ref(false)
+const teamError = ref(null)
+const team = ref([])
+
+const fetchAdminMembers = async () => {
+  teamLoading.value = true
+  teamError.value = null
+
+  console.group('📤 GET ADMIN MEMBERS REQUEST')
+  console.log('URL:', '/get-admin-members')
+  console.log('Method:', 'GET')
+  console.groupEnd()
+
+  try {
+    const response = await ApiService.get('/get-admin-members', {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+
+    console.group('📥 GET ADMIN MEMBERS RESPONSE')
+    console.log('Status:', response.status)
+    console.log('Data:', response.data)
+    console.groupEnd()
+
+    team.value = response.data?.data?.admins || []
+  } catch (err) {
+    console.group('❌ GET ADMIN MEMBERS ERROR')
+    console.log('Status:', err.response?.status)
+    console.log('Data:', err.response?.data)
+    console.log('Error:', err)
+    console.groupEnd()
+
+    teamError.value =
+      err.response?.data?.message || 'Failed to load admin members'
+  } finally {
+    teamLoading.value = false
+  }
+}
+
+
+onMounted(async () => {
+  await fetchProducts()
+  await fetchFeatureStatus()
+  mergeProductsWithStatus()
+  fetchAdminMembers()
 })
 </script>
 
@@ -387,7 +491,10 @@ onMounted(() => {
           </div>
 
           <div class="bg-white rounded-lg shadow overflow-hidden mt-4">
-            <table class="min-w-full border-collapse">
+            <div v-if="productsLoading" class="flex flex-col items-center justify-center min-h-[200px]">
+        <LoadingOverlay :visible="productsLoading" message="Loading products..." />
+      </div>
+            <table v-else class="min-w-full border-collapse">
               <!-- Header -->
               <thead class="bg-gray-50 border-b">
                 <tr class="text-left text-sm font-semibold text-gray-600">

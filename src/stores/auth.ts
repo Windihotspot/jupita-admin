@@ -68,7 +68,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await ApiService.post('/login', payload)
         const res: AuthResponse = response.data
-
+        console.log("login response:", response)
         // Set store state
         this.user = res.user
         this.token = res.token
