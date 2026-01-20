@@ -631,17 +631,10 @@ onMounted(async () => {
               <section v-if="activeTab === 'profile'">
                 <div class="flex justify-between">
                   <p class="text-sm font-semibold mb-6">Personal Information</p>
-                <v-chip
-  color="primary"
-  variant="tonal"
-  size="small"
-  class="mb-6 font-semibold"
->
-  {{ personalTitle }}
-</v-chip>
-
+                  <v-chip color="primary" variant="tonal" size="small" class="mb-6 font-semibold">
+                    {{ personalTitle }}
+                  </v-chip>
                 </div>
-                
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                   <v-text-field
