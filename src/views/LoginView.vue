@@ -101,7 +101,7 @@ const handleLogin = async () => {
   console.log('login response:', success)
 
   if (success) {
-   router.push({ name: 'dasboard' })
+   router.push({ name: 'dashboard' })
 
   }
 }
