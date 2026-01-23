@@ -9,10 +9,10 @@ const auth = useAuthStore()
 </script>
 
 <template>
-  <div class="header items-center px-4 py-4 bg-white">
-      <el-dropdown >
+  <div class="header items-center px-8 py-4 bg-white">
+     
       <div
-        class="flex items-center bg-white shadow-sm px-3 py-2 rounded cursor-pointer"
+        class="flex items-center bg-white px-3 py-2 cursor-pointer"
       >
         <!-- Avatar -->
         <img
@@ -22,21 +22,14 @@ const auth = useAuthStore()
 
         <!-- Name -->
         <span class="ml-2 text-sm font-medium text-gray-700 max-w-[80px] truncate">
-          {{ auth.user.firstname }} {{ auth.user.lastname }}
+          {{ auth.user.firstname }} 
         </span>
 
         
       </div>
 
-      <!-- Dropdown Menu -->
-      <template #dropdown>
-        <el-dropdown-menu>
-          <el-dropdown-item command="profile">Profile</el-dropdown-item>
-          <el-dropdown-item divided command="logout">Logout</el-dropdown-item>
-        </el-dropdown-menu>
-      </template>
-
-    </el-dropdown>
+     
+   
   </div>
 </template>
 

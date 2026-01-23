@@ -49,7 +49,7 @@ export const useAuthStore = defineStore('auth', {
     tenants: 0,
     active_tenants: 0,
     inactive_tenants: 0,
-    stats: {} as StatsMap,       // raw stats per tenant
+    stats: {} as StatsMap, // raw stats per tenant
     loading: false,
     error: null as string | null
   }),
@@ -68,7 +68,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await ApiService.post('/login', payload)
         const res: AuthResponse = response.data
-        console.log("login response:", response)
+        console.log('login response:', response)
         // Set store state
         this.user = res.user
         this.token = res.token
@@ -82,19 +82,56 @@ export const useAuthStore = defineStore('auth', {
         // Persist everything
         localStorage.setItem('token', res.token)
         localStorage.setItem('user', JSON.stringify(res.user))
-        localStorage.setItem('auth_data', JSON.stringify({
-          user: res.user,
-          token: res.token,
-          tenants: res.tenants,
-          active_tenants: res.active_tenants,
-          inactive_tenants: res.inactive_tenants,
-          stats: res.stats || {}
-        }))
+        localStorage.setItem(
+          'auth_data',
+          JSON.stringify({
+            user: res.user,
+            token: res.token,
+            tenants: res.tenants,
+            active_tenants: res.active_tenants,
+            inactive_tenants: res.inactive_tenants,
+            stats: res.stats || {}
+          })
+        )
 
         return true
       } catch (err: any) {
         this.error = err.response?.data?.message || 'Login failed'
         return false
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchUser() {
+      if (!this.token) return
+
+      this.loading = true
+      this.error = null
+
+      try {
+        const response = await ApiService.get('/me', {
+          headers: { Authorization: `Bearer ${this.token}` }
+        })
+
+        const user: User = response.data.user
+        this.user = user
+
+        // persist updated user
+        const storedData = {
+          user: this.user,
+          token: this.token,
+          tenants: this.tenants,
+          active_tenants: this.active_tenants,
+          inactive_tenants: this.inactive_tenants,
+          stats: this.stats
+        }
+        localStorage.setItem('auth_data', JSON.stringify(storedData))
+
+        return user
+      } catch (err: any) {
+        console.error('Failed to fetch user:', err)
+        this.error = err.response?.data?.message || 'Failed to refresh user'
+        return null
       } finally {
         this.loading = false
       }
