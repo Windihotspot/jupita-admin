@@ -35,7 +35,12 @@ const fetchProducts = async () => {
     console.log('Data:', response.data)
     console.groupEnd()
 
-    products.value = response.data?.products || response.data || []
+    const rawProducts = response.data?.products || response.data || []
+
+    products.value = rawProducts.map((product) => ({
+      ...product,
+      global: product.global_status === 'active'
+    }))
   } catch (err) {
     console.group('❌ GET PRODUCTS ERROR')
     console.log('Status:', err.response?.status)
@@ -46,6 +51,48 @@ const fetchProducts = async () => {
     productsError.value = err.response?.data?.message || 'Failed to load products'
   } finally {
     productsLoading.value = false
+  }
+}
+
+const toggleProductStatus = async (product) => {
+  const previousGlobal = product.global
+  const newStatus = product.global ? 'active' : 'inactive'
+
+  toggleLoadingMap.value[product.id] = true
+  const payload = {
+    product_id: product.id,
+    status: newStatus
+  }
+  console.log('payload:', payload)
+  try {
+    await ApiService.put('/toggle-product-status', payload, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+
+    // sync UI with backend response
+    product.global_status = newStatus
+
+    ElNotification({
+      type: 'success',
+      message:
+        newStatus === 'active'
+          ? 'Product activated successfully'
+          : 'Product deactivated successfully',
+      duration: 2500
+    })
+  } catch (err) {
+    console.log('error:', err.response.data)
+    // rollback UI on failure
+    product.global = previousGlobal
+
+    ElNotification({
+      type: 'error',
+      message: err.response?.data?.message || 'Failed to update product status'
+    })
+  } finally {
+    toggleLoadingMap.value[product.id] = false
   }
 }
 
@@ -164,119 +211,6 @@ const profile = ref({
 // ----------------------
 const toggleLoadingMap = ref({})
 
-const toggleProductStatus = async (product) => {
-  const productId = product.id
-
-  // store previous state (for rollback)
-  const previousState = product.global
-
-  toggleLoadingMap.value[productId] = true
-
-  const payload = {
-    globally: product.global,
-    product_name: product.name,
-    status: product.global ? 'on' : 'off',
-    tenant_id: auth.tenant_id
-  }
-
-  console.group('📤 TOGGLE FEATURE REQUEST')
-  console.log('URL:', '/toggle-feature-status')
-  console.log('Payload:', payload)
-  console.groupEnd()
-
-  try {
-    const response = await ApiService.post('/toggle-feature-status', payload, {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
-    })
-
-    console.group('📥 TOGGLE FEATURE RESPONSE')
-    console.log('Status:', response.status)
-    console.log('Data:', response.data)
-    console.groupEnd()
-
-    // update UI status label if backend responds successfully
-    product.status = product.global ? 'Active' : 'Inactive'
-  } catch (err) {
-    console.group('❌ TOGGLE FEATURE ERROR')
-    console.log('Status:', err.response?.status)
-    console.log('Data:', err.response?.data)
-    console.log('Error:', err)
-    console.groupEnd()
-
-    // rollback switch
-    product.global = previousState
-  } finally {
-    toggleLoadingMap.value[productId] = false
-  }
-}
-
-const featureStatus = ref(null)
-
-const fetchFeatureStatus = async () => {
-  console.group('📤 GET FEATURE STATUS REQUEST')
-  console.log('URL:', '/get-feature-status')
-  console.groupEnd()
-
-  try {
-    const response = await ApiService.get('/get-feature-status', {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
-    })
-
-    console.group('📥 GET FEATURE STATUS RESPONSE')
-    console.log('Status:', response.status)
-    console.log('Data:', response.data)
-    console.groupEnd()
-
-    featureStatus.value = response.data?.data?.feature_status || null
-  } catch (err) {
-    console.group('❌ GET FEATURE STATUS ERROR')
-    console.log('Status:', err.response?.status)
-    console.log('Data:', err.response?.data)
-    console.log('Error:', err)
-    console.groupEnd()
-  }
-}
-
-const PRODUCT_FEATURE_MAP = {
-  CRC: 'crc',
-  'Credit Registry': 'credit_registry',
-  FCCB: 'fccb',
-  'Mono Bank Statement Analysis': 'mono_bank_statement_analysis',
-  'Offer Recommendation': 'offer_recommendation',
-  'Periculum Bank Statement Analysis': 'periculum_bank_statement_analysis',
-  'Smile ID Verification': 'smile_id_verification',
-  'Zeeh Africa ID Verification': 'zeeh_africa_id_verification',
-  'Loan Origination': 'loan_origination'
-}
-
-const mergeProductsWithStatus = () => {
-  if (!featureStatus.value) return
-
-  products.value = products.value.map((product) => {
-    const featureKey = PRODUCT_FEATURE_MAP[product.name]
-
-    if (!featureKey) {
-      return {
-        ...product,
-        status: 'Inactive',
-        global: false
-      }
-    }
-
-    const isOn = featureStatus.value[featureKey] === 'on'
-
-    return {
-      ...product,
-      global: isOn,
-      status: isOn ? 'Active' : 'Inactive'
-    }
-  })
-}
-
 const teamLoading = ref(false)
 const teamError = ref(null)
 const team = ref([])
@@ -340,17 +274,9 @@ const personalTitle = computed(() => {
   return role ? `${role.title}` : 'Personal Information'
 })
 
-const fullName = computed(() => {
-  const first = user?.firstname || ''
-  const last = user?.lastname || ''
-  return `${first} ${last}`.trim()
-})
-
 onMounted(async () => {
   selectedRoleId.value = auth.user.role_id
   await fetchProducts()
-  await fetchFeatureStatus()
-  mergeProductsWithStatus()
   fetchAdminMembers()
   fetchRoles()
 })
@@ -513,8 +439,8 @@ const updatePassword = async () => {
       password: '',
       password_confirmation: ''
     }
-   await nextTick()
-passwordFormRef.value?.resetValidation()
+    await nextTick()
+    passwordFormRef.value?.resetValidation()
 
     passwordFormRef.value.resetValidation()
   } catch (err) {
@@ -754,7 +680,8 @@ passwordFormRef.value?.resetValidation()
                     <el-switch
                       v-model="product.global"
                       :loading="toggleLoadingMap[product.id]"
-                      active-color="#16a34a"
+                      :disabled="toggleLoadingMap[product.id]"
+                      active-color="#13ce66"
                       inactive-color="#dc2626"
                       @change="() => toggleProductStatus(product)"
                     />
@@ -806,7 +733,13 @@ passwordFormRef.value?.resetValidation()
               <section v-if="activeTab === 'profile'">
                 <div class="flex gap-6">
                   <p class="text-sm font-semibold mb-6">Personal Information</p>
-                  <v-chip color="primary" label variant="tonal" size="small" class="mb-6 font-semibold">
+                  <v-chip
+                    color="primary"
+                    label
+                    variant="tonal"
+                    size="small"
+                    class="mb-6 font-semibold"
+                  >
                     {{ personalTitle }}
                   </v-chip>
                 </div>
