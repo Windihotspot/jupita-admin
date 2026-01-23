@@ -61,7 +61,7 @@ const toggleProductStatus = async (product) => {
   toggleLoadingMap.value[product.id] = true
   const payload = {
     product_id: product.id,
-    status: newStatus
+    new_status: newStatus
   }
   console.log('payload:', payload)
   try {
@@ -84,7 +84,6 @@ const toggleProductStatus = async (product) => {
     })
   } catch (err) {
     console.log('error:', err.response.data)
-    // rollback UI on failure
     product.global = previousGlobal
 
     ElNotification({
@@ -273,6 +272,8 @@ const personalTitle = computed(() => {
   const role = roles.value.find((r) => r.id === selectedRoleId.value)
   return role ? `${role.title}` : 'Personal Information'
 })
+
+
 
 onMounted(async () => {
   selectedRoleId.value = auth.user.role_id
