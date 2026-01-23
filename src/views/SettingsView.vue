@@ -2,7 +2,7 @@
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
 import ApiService from '@/services/api'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 const tab = ref('products')
 import { useRouter } from 'vue-router'
@@ -141,8 +141,6 @@ const createAdmin = async () => {
 }
 
 const router = useRouter()
-
-
 
 const tabs = [
   { label: 'Products', value: 'products' },
@@ -304,7 +302,7 @@ const fetchAdminMembers = async () => {
     console.log('Data:', response.data)
     console.groupEnd()
 
-    team.value = response.data?.data?.admins || []
+    team.value = response.data?.admins || []
   } catch (err) {
     console.group('❌ GET ADMIN MEMBERS ERROR')
     console.log('Status:', err.response?.status)
@@ -339,7 +337,7 @@ const fetchRoles = async () => {
 
 const personalTitle = computed(() => {
   const role = roles.value.find((r) => r.id === selectedRoleId.value)
-  return role ? `${role.title} Profile` : 'Personal Information'
+  return role ? `${role.title}` : 'Personal Information'
 })
 
 const fullName = computed(() => {
@@ -366,6 +364,169 @@ const goToProduct = (product) => {
   })
 }
 
+// ====== Role Update Dialog ======
+const showRoleDialog = ref(false)
+const selectedAdmin = ref(null)
+const selectedNewRoleId = ref(null)
+const updatingRole = ref(false)
+const roleUpdateError = ref(null)
+
+// Open dialog for a specific admin
+const openRoleDialog = (admin) => {
+  selectedAdmin.value = admin
+  selectedNewRoleId.value = admin.role_id // pre-select current role
+  roleUpdateError.value = null
+  showRoleDialog.value = true
+}
+
+// Update role API call
+const updateAdminRole = async () => {
+  if (!selectedAdmin.value || !selectedNewRoleId.value) return
+
+  updatingRole.value = true
+  roleUpdateError.value = null
+
+  try {
+    const payload = {
+      admin_id: selectedAdmin.value.id,
+      new_role_id: selectedNewRoleId.value
+    }
+
+    const response = await ApiService.put('/update-admin-role', payload, {
+      headers: { Authorization: `Bearer ${auth.token}` }
+    })
+
+    ElNotification({
+      type: 'success',
+      message: 'Admin role updated successfully',
+      duration: 3000
+    })
+
+    // update the team array locally
+    selectedAdmin.value.role_id = selectedNewRoleId.value
+    selectedAdmin.value.role =
+      roles.value.find((r) => r.id === selectedNewRoleId.value)?.title || 'Unknown'
+
+    showRoleDialog.value = false
+  } catch (err) {
+    console.log('❌ Update role error', err)
+    roleUpdateError.value = err.response?.data?.message || 'Failed to update role'
+  } finally {
+    updatingRole.value = false
+  }
+}
+
+// ====== Update Personal Data ======
+const updatingProfile = ref(false)
+const updateProfileError = ref(null)
+
+const personalData = ref({
+  firstname: user?.firstname || '',
+  lastname: user?.lastname || '',
+  email: user?.email || '',
+  phone: user?.phone || ''
+})
+
+// PUT request to update admin data
+const updatePersonalData = async () => {
+  updatingProfile.value = true
+  updateProfileError.value = null
+
+  const payload = {
+    id: user.id,
+    firstname: personalData.value.firstname,
+    lastname: personalData.value.lastname,
+    email: personalData.value.email,
+    phone: personalData.value.phone
+  }
+  console.log('Payload:', payload)
+
+  try {
+    const response = await ApiService.put('/update-admin-data', payload, {
+      headers: { Authorization: `Bearer ${auth.token}` }
+    })
+
+    ElNotification({
+      type: 'success',
+      message: 'Profile updated successfully!',
+      duration: 3000
+    })
+    fetchAdminMembers()
+    console.log('RESPONSE:', response)
+    // Update local auth user info
+    auth.user.firstname = personalData.value.firstname
+    auth.user.lastname = personalData.value.lastname
+    auth.user.email = personalData.value.email
+    auth.user.phone = personalData.value.phone
+  } catch (err) {
+    console.log('ERROR:', err)
+
+    updateProfileError.value = err.response?.data?.message || 'Failed to update profile'
+  } finally {
+    updatingProfile.value = false
+  }
+}
+
+// ====== Update Password ======
+const passwordFormRef = ref(null)
+const updatingPassword = ref(false)
+const updatePasswordError = ref(null)
+
+const passwordData = ref({
+  old_password: '',
+  password: '',
+  password_confirmation: ''
+})
+const confirmPasswordRule = (v) => v === passwordData.value.password || 'Passwords do not match'
+
+const updatePassword = async () => {
+  const { valid } = await passwordFormRef.value.validate()
+  if (!valid) return
+
+  updatingPassword.value = true
+  updatePasswordError.value = null
+
+  const payload = {
+    password: passwordData.value.password,
+    password_confirmation: passwordData.value.password_confirmation
+  }
+
+  console.group('📤 UPDATE PASSWORD REQUEST')
+  console.log('URL:', '/update-admin-password')
+  console.log('Payload:', payload)
+  console.groupEnd()
+
+  try {
+    await ApiService.put('/update-admin-password', payload, {
+      headers: { Authorization: `Bearer ${auth.token}` }
+    })
+
+    ElNotification({
+      type: 'success',
+      message: 'Password updated successfully',
+      duration: 3000
+    })
+
+    // reset fields
+    passwordData.value = {
+      old_password: '',
+      password: '',
+      password_confirmation: ''
+    }
+   await nextTick()
+passwordFormRef.value?.resetValidation()
+
+    passwordFormRef.value.resetValidation()
+  } catch (err) {
+    console.group('❌ UPDATE PASSWORD ERROR')
+    console.log(err)
+    console.groupEnd()
+
+    updatePasswordError.value = err.response?.data?.message || 'Failed to update password'
+  } finally {
+    updatingPassword.value = false
+  }
+}
 </script>
 
 <template>
@@ -569,12 +730,12 @@ const goToProduct = (product) => {
                     <span
                       class="px-3 py-1 rounded-full text-xs font-medium"
                       :class="
-                        product.status === 'Active'
+                        product.global_status === 'active'
                           ? 'bg-green-100 text-green-700'
                           : 'bg-red-100 text-red-700'
                       "
                     >
-                      {{ product.status }}
+                      {{ product.global_status }}
                     </span>
                   </td>
 
@@ -641,49 +802,98 @@ const goToProduct = (product) => {
             <!-- Content -->
             <main class="flex-1 m-4 p-8">
               <!-- ================= PERSONAL INFORMATION ================= -->
+              <!-- ================= PERSONAL INFORMATION ================= -->
               <section v-if="activeTab === 'profile'">
-                <div class="flex justify-between">
+                <div class="flex gap-6">
                   <p class="text-sm font-semibold mb-6">Personal Information</p>
-                  <v-chip color="primary" variant="tonal" size="small" class="mb-6 font-semibold">
+                  <v-chip color="primary" label variant="tonal" size="small" class="mb-6 font-semibold">
                     {{ personalTitle }}
                   </v-chip>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                   <v-text-field
-                     :model-value="fullName"
-                    label="Full name"
+                    v-model="personalData.firstname"
+                    label="First Name"
                     variant="outlined"
                     density="comfortable"
                   />
-
                   <v-text-field
-                    v-model="user.phone"
-                    label="Phone number"
+                    v-model="personalData.lastname"
+                    label="Last Name"
                     variant="outlined"
                     density="comfortable"
                   />
-
                   <v-text-field
-                    v-model="user.email"
-                    label="Email address"
+                    v-model="personalData.phone"
+                    label="Phone Number"
                     variant="outlined"
                     density="comfortable"
                   />
-
-                  <v-select
-                    v-model="selectedRoleId"
-                    label="Role"
-                    :items="roles"
-                    item-title="title"
-                    item-value="id"
+                  <v-text-field
+                    v-model="personalData.email"
+                    label="Email Address"
                     variant="outlined"
                     density="comfortable"
                   />
                 </div>
 
+                <p v-if="updateProfileError" class="text-red-600 text-sm mt-3">
+                  {{ updateProfileError }}
+                </p>
+
                 <div class="mt-8">
-                  <v-btn color="primary"> Save changes </v-btn>
+                  <v-btn color="primary" :loading="updatingProfile" @click="updatePersonalData">
+                    Save Changes
+                  </v-btn>
+                </div>
+
+                <!-- ================= CHANGE PASSWORD ================= -->
+                <div class="mt-12 max-w-3xl">
+                  <h3 class="text-sm font-semibold mb-4">Change Password</h3>
+
+                  <v-form ref="passwordFormRef">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <v-text-field
+                        v-model="passwordData.old_password"
+                        label="Old Password"
+                        type="password"
+                        variant="outlined"
+                        density="comfortable"
+                        :rules="[rules.required]"
+                      />
+
+                      <div></div>
+
+                      <v-text-field
+                        v-model="passwordData.password"
+                        label="New Password"
+                        type="password"
+                        variant="outlined"
+                        density="comfortable"
+                        :rules="[rules.required, rules.password]"
+                      />
+
+                      <v-text-field
+                        v-model="passwordData.password_confirmation"
+                        label="Confirm New Password"
+                        type="password"
+                        variant="outlined"
+                        density="comfortable"
+                        :rules="[rules.required, confirmPasswordRule]"
+                      />
+                    </div>
+
+                    <p v-if="updatePasswordError" class="text-red-600 text-sm mt-3">
+                      {{ updatePasswordError }}
+                    </p>
+
+                    <div class="mt-6">
+                      <v-btn color="primary" :loading="updatingPassword" @click="updatePassword">
+                        Update Password
+                      </v-btn>
+                    </div>
+                  </v-form>
                 </div>
               </section>
 
@@ -696,7 +906,7 @@ const goToProduct = (product) => {
                     <thead class="bg-gray-100">
                       <tr class="text-left text-sm font-semibold text-gray-600">
                         <th class="px-4 py-3">S/N</th>
-                        <th class="px-4 py-3">Product Name</th>
+                        <th class="px-4 py-3">Full Name</th>
                         <th class="px-4 py-3">Role</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3"></th>
@@ -706,14 +916,16 @@ const goToProduct = (product) => {
                     <tbody>
                       <tr v-for="(member, index) in team" :key="member.id" class="border-t text-sm">
                         <td class="px-4 py-3">{{ index + 1 }}</td>
-                        <td class="px-4 py-3">{{ member.name }}</td>
-                        <td class="px-4 py-3">{{ member.role }}</td>
+                        <td class="px-4 py-3">{{ member.firstname + ' ' + member.lastname }}</td>
+                        <td class="px-4 py-3">
+                          {{ roles.find((r) => r.id === member.role_id)?.title || 'Unknown Role' }}
+                        </td>
 
                         <td class="px-4 py-3">
                           <span
                             class="px-3 py-1 rounded-full text-xs font-medium"
                             :class="
-                              member.status === 'Active'
+                              member.status === 'active'
                                 ? 'bg-green-100 text-green-600'
                                 : 'bg-red-100 text-red-600'
                             "
@@ -724,7 +936,10 @@ const goToProduct = (product) => {
 
                         <td class="px-4 py-3">
                           <div class="flex items-center gap-4 text-gray-500">
-                            <i class="fas fa-pen cursor-pointer hover:text-blue-600"></i>
+                            <i
+                              @click="openRoleDialog(member)"
+                              class="fas fa-pen cursor-pointer hover:text-blue-600"
+                            ></i>
                             <el-switch />
                             <i class="fas fa-trash cursor-pointer text-red hover:text-red-600"></i>
                           </div>
@@ -732,6 +947,47 @@ const goToProduct = (product) => {
                       </tr>
                     </tbody>
                   </table>
+
+                  <el-dialog
+                    v-model="showRoleDialog"
+                    title="Update Admin Role"
+                    width="400px"
+                    :before-close="() => (showRoleDialog = false)"
+                  >
+                    <div class="space-y-4">
+                      <p class="text-sm font-medium">
+                        Updating role for
+                        <strong
+                          >{{ selectedAdmin?.firstname }} {{ selectedAdmin?.lastname }}</strong
+                        >
+                      </p>
+
+                      <el-select
+                        v-model="selectedNewRoleId"
+                        placeholder="Select new role"
+                        filterable
+                        style="width: 100%"
+                      >
+                        <el-option
+                          v-for="role in roles"
+                          :key="role.id"
+                          :label="role.title"
+                          :value="role.id"
+                        />
+                      </el-select>
+
+                      <p v-if="roleUpdateError" class="text-red-600 text-sm">
+                        {{ roleUpdateError }}
+                      </p>
+                    </div>
+
+                    <template #footer>
+                      <el-button @click="showRoleDialog = false">Cancel</el-button>
+                      <el-button type="primary" :loading="updatingRole" @click="updateAdminRole">
+                        Update Role
+                      </el-button>
+                    </template>
+                  </el-dialog>
                 </div>
               </section>
             </main>

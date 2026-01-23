@@ -6,9 +6,7 @@
         <h1 class="text-md font-semibold">Dashboard</h1>
         <p class="text-xs text-gray">View what matters</p>
       </div>
-
       <hr />
-
       <div v-if="loading" class="flex flex-col items-center justify-center min-h-[200px]">
         <LoadingOverlay :visible="loading" message="Loading dashboard..." />
       </div>
@@ -47,6 +45,7 @@
         </div>
       </div>
 
+      
       <!-- Summary Cards -->
       <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="p-4 rounded-lg bg-blue-50">
