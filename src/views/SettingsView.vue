@@ -2,13 +2,15 @@
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
 import ApiService from '@/services/api'
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 const tab = ref('products')
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore()
-const user = auth?.user
+
+const user = computed(() => auth.user)
+
 console.log('user:', user)
 const productsLoading = ref(false)
 const productsError = ref(null)
@@ -273,8 +275,6 @@ const personalTitle = computed(() => {
   return role ? `${role.title}` : 'Personal Information'
 })
 
-
-
 onMounted(async () => {
   selectedRoleId.value = auth.user.role_id
   await fetchProducts()
@@ -348,19 +348,31 @@ const updatingProfile = ref(false)
 const updateProfileError = ref(null)
 
 const personalData = ref({
-  firstname: user?.firstname || '',
-  lastname: user?.lastname || '',
-  email: user?.email || '',
-  phone: user?.phone || ''
+  firstname: '',
+  lastname: '',
+  email: '',
+  phone: ''
 })
 
+watch(
+  user,
+  (u) => {
+    if (!u) return
+
+    personalData.value.firstname = u.firstname
+    personalData.value.lastname = u.lastname
+    personalData.value.email = u.email
+    personalData.value.phone = u.phone
+  },
+  { immediate: true }
+)
 // PUT request to update admin data
 const updatePersonalData = async () => {
   updatingProfile.value = true
   updateProfileError.value = null
 
   const payload = {
-    id: user.id,
+    id: user.value.id,
     firstname: personalData.value.firstname,
     lastname: personalData.value.lastname,
     email: personalData.value.email,
@@ -380,11 +392,8 @@ const updatePersonalData = async () => {
     })
     fetchAdminMembers()
     console.log('RESPONSE:', response)
-    // Update local auth user info
-    auth.user.firstname = personalData.value.firstname
-    auth.user.lastname = personalData.value.lastname
-    auth.user.email = personalData.value.email
-    auth.user.phone = personalData.value.phone
+    // ✅ single source of truth
+    await auth.fetchUser()
   } catch (err) {
     console.log('ERROR:', err)
 
