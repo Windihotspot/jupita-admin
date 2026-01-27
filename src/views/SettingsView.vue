@@ -378,7 +378,7 @@ const updatePersonalData = async () => {
       message: 'Profile updated successfully!',
       duration: 3000
     })
-    fetchAdminMembers()
+    
     console.log('RESPONSE:', response)
     // Update local auth user info
     auth.user.firstname = personalData.value.firstname

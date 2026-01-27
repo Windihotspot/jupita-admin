@@ -109,10 +109,10 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const response = await ApiService.get('/me', {
+        const response = await ApiService.get('/get-specified-admin', {
           headers: { Authorization: `Bearer ${this.token}` }
         })
-
+        console.log("fetch user response:", response)
         const user: User = response.data.user
         this.user = user
 
