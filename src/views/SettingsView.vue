@@ -280,6 +280,7 @@ onMounted(async () => {
   await fetchProducts()
   fetchAdminMembers()
   fetchRoles()
+  
 })
 
 const goToProduct = (product) => {
@@ -463,6 +464,8 @@ const updatePassword = async () => {
     updatingPassword.value = false
   }
 }
+
+
 </script>
 
 <template>

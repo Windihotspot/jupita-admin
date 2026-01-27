@@ -121,7 +121,7 @@ export const useAuthStore = defineStore('auth', {
         console.log('admin data response:', response)
 
         // depending on your API shape
-        this.user = response.data.user ?? response.data
+        this.user = response.data.admin
 
         // persist updated user
         localStorage.setItem(
