@@ -103,31 +103,40 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async fetchUser() {
-      if (!this.token) return
+      if (!this.token || !this.user?.id) return
 
       this.loading = true
       this.error = null
 
       try {
         const response = await ApiService.get('/get-specified-admin', {
-          headers: { Authorization: `Bearer ${this.token}` }
+          params: {
+            admin_id: this.user.id
+          },
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          }
         })
-        console.log("fetch user response:", response)
-        const user: User = response.data.user
-        this.user = user
+
+        console.log('admin data response:', response)
+
+        // depending on your API shape
+        this.user = response.data.user ?? response.data
 
         // persist updated user
-        const storedData = {
-          user: this.user,
-          token: this.token,
-          tenants: this.tenants,
-          active_tenants: this.active_tenants,
-          inactive_tenants: this.inactive_tenants,
-          stats: this.stats
-        }
-        localStorage.setItem('auth_data', JSON.stringify(storedData))
+        localStorage.setItem(
+          'auth_data',
+          JSON.stringify({
+            user: this.user,
+            token: this.token,
+            tenants: this.tenants,
+            active_tenants: this.active_tenants,
+            inactive_tenants: this.inactive_tenants,
+            stats: this.stats
+          })
+        )
 
-        return user
+        return this.user
       } catch (err: any) {
         console.error('Failed to fetch user:', err)
         this.error = err.response?.data?.message || 'Failed to refresh user'
@@ -136,7 +145,6 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-
     // --- LOGOUT ---
     logout() {
       this.user = null
