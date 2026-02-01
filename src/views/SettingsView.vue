@@ -382,7 +382,7 @@ const updatePersonalData = async () => {
       message: 'Profile updated successfully!',
       duration: 3000
     })
-    fetchAdminMembers()
+    
     console.log('RESPONSE:', response)
     // ✅ single source of truth
     await auth.fetchUser()
@@ -459,6 +459,8 @@ const updatePassword = async () => {
 watch(searchQuery, (val) => {
   if (!val) selectedStatus.value = null
 })
+
+
 </script>
 
 <template>
