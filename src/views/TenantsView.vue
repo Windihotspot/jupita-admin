@@ -6,6 +6,12 @@ import { useAuthStore } from '@/stores/auth'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 import moment from 'moment'
 const auth = useAuthStore()
+import { useProductsStore } from '@/stores/products'
+
+console.log("Testing store independently")
+const store = useProductsStore()
+store.fetchFeatures()
+
 
 const tenants = ref([])
 const loading = ref(false)
@@ -334,12 +340,12 @@ const paginatedTenants = computed(() => {
 
           <v-text-field
           v-model="searchQuery"
-            placeholder="Search by Tenant name"
+            placeholder="Search Tenant "
             density="compact"
             hide-details
             variant="outlined"
             class="w-64"
-            prepend-inner-icon="fa-solid fa-search text-gray text-sm"
+            prepend-inner-icon="mdi-magnify"
           >
           </v-text-field>
         </div>

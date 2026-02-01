@@ -12,49 +12,14 @@ const auth = useAuthStore()
 const user = computed(() => auth.user)
 
 console.log('user:', user)
-const productsLoading = ref(false)
-const productsError = ref(null)
-const products = ref([])
+import { useProductsStore } from '@/stores/products'
 
-const fetchProducts = async () => {
-  productsLoading.value = true
-  productsError.value = null
+const productsStore = useProductsStore()
+console.log('product store:', productsStore.value)
 
-  console.group('📤 GET PRODUCTS REQUEST')
-  console.log('URL:', '/get-products')
-  console.log('Method:', 'GET')
-  console.groupEnd()
-
-  try {
-    const response = await ApiService.get('/get-products', {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
-    })
-
-    console.group('📥 GET PRODUCTS RESPONSE')
-    console.log('Status:', response.status)
-    console.log('Data:', response.data)
-    console.groupEnd()
-
-    const rawProducts = response.data?.products || response.data || []
-
-    products.value = rawProducts.map((product) => ({
-      ...product,
-      global: product.global_status === 'active'
-    }))
-  } catch (err) {
-    console.group('❌ GET PRODUCTS ERROR')
-    console.log('Status:', err.response?.status)
-    console.log('Data:', err.response?.data)
-    console.log('Error:', err)
-    console.groupEnd()
-
-    productsError.value = err.response?.data?.message || 'Failed to load products'
-  } finally {
-    productsLoading.value = false
-  }
-}
+const products = computed(() => productsStore.products)
+const productsLoading = computed(() => productsStore.loading)
+const productsError = computed(() => productsStore.error)
 
 const toggleProductStatus = async (product) => {
   const previousGlobal = product.global
@@ -74,7 +39,8 @@ const toggleProductStatus = async (product) => {
     })
 
     // sync UI with backend response
-    product.global_status = newStatus
+    // after successful API call
+    productsStore.updateProductStatus(product.id, newStatus)
 
     ElNotification({
       type: 'success',
@@ -277,17 +243,43 @@ const personalTitle = computed(() => {
 
 onMounted(async () => {
   selectedRoleId.value = auth.user.role_id
-  await fetchProducts()
+
+  if (!productsStore.products.length) {
+    await productsStore.fetchProducts()
+  }
+
   fetchAdminMembers()
   fetchRoles()
 })
 
+// search & filter
+const searchQuery = ref('')
+const selectedStatus = ref(null)
+
+const statuses = [
+  { label: 'Active', value: 'active' },
+  { label: 'Inactive', value: 'inactive' }
+]
+
+const filteredProducts = computed(() => {
+  return products.value.filter((product) => {
+    // Filter by status if selected
+    const statusMatch = selectedStatus.value ? product.global_status === selectedStatus.value : true
+
+    // Filter by search query (name)
+    const searchMatch = searchQuery.value
+      ? product.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+      : true
+
+    return statusMatch && searchMatch
+  })
+})
+
 const goToProduct = (product) => {
+  console.log('product:', product)
   router.push({
     name: 'product-details',
-    params: {
-      productId: product.id
-    }
+    params: { productId: product.id }
   })
 }
 
@@ -463,6 +455,10 @@ const updatePassword = async () => {
     updatingPassword.value = false
   }
 }
+
+watch(searchQuery, (val) => {
+  if (!val) selectedStatus.value = null
+})
 </script>
 
 <template>
@@ -597,6 +593,20 @@ const updatePassword = async () => {
             <div class="flex items-center space-x-2 pt-2">
               <!-- Filter Icon -->
               <i class="fa fa-filter"></i>
+              <el-select
+                v-model="selectedStatus"
+                placeholder="Status"
+                clearable
+                style="width: 120px"
+                size="large"
+              >
+                <el-option
+                  v-for="item in statuses"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
 
               <!-- <el-select
               v-model="selectedStatus"
@@ -614,12 +624,13 @@ const updatePassword = async () => {
             </el-select> -->
 
               <v-text-field
+                v-model="searchQuery"
                 placeholder="Search a product"
                 density="compact"
                 hide-details
                 variant="outlined"
                 class="w-64 bg-white"
-                prepend-inner-icon="fa-solid fa-search text-gray text-sm"
+                prepend-inner-icon="mdi-magnify"
               >
               </v-text-field>
             </div>
@@ -647,7 +658,7 @@ const updatePassword = async () => {
               <!-- Body -->
               <tbody>
                 <tr
-                  v-for="(product, index) in products"
+                  v-for="(product, index) in filteredProducts"
                   :key="product.id"
                   class="border-b last:border-b-0 hover:bg-gray-50"
                 >
@@ -742,7 +753,13 @@ const updatePassword = async () => {
               <!-- ================= PERSONAL INFORMATION ================= -->
               <section v-if="activeTab === 'profile'">
                 <div class="flex gap-6">
-                  <p class="text-sm font-semibold mb-6">Personal Information</p>
+                  <div class="flex justify-between">
+                    <p class="text-sm font-semibold mb-6">Personal Information</p>
+                    <v-btn variant="text" color="primary" :loading="updatingProfile" @click="updatePersonalData">
+                      Reset Password
+                    </v-btn>
+                  </div>
+
                   <v-chip
                     color="primary"
                     label
@@ -793,7 +810,14 @@ const updatePassword = async () => {
 
                 <!-- ================= CHANGE PASSWORD ================= -->
                 <div class="mt-12 max-w-3xl">
-                  <h3 class="text-sm font-semibold mb-4">Change Password</h3>
+                  
+
+                   <div class="flex justify-between">
+                    <h3 class="text-sm font-semibold mb-4">Change Password</h3>
+                    <v-btn variant="text" color="primary" :loading="updatingProfile" @click="updatePersonalData">
+                      Reset Password
+                    </v-btn>
+                  </div>
 
                   <v-form ref="passwordFormRef">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
