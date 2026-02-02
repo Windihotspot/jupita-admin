@@ -37,7 +37,7 @@ const fetchTenantDetails = async (silent = false) => {
     end_date: endDate.value
   }
 
-  const token = localStorage.getItem('token')
+  const token = auth.token
 
   console.log('🔍 Fetch Tenant Details Payload:', params)
 
