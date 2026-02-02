@@ -382,7 +382,7 @@ const updatePersonalData = async () => {
       message: 'Profile updated successfully!',
       duration: 3000
     })
-    
+
     console.log('RESPONSE:', response)
     // ✅ single source of truth
     await auth.fetchUser()
@@ -456,11 +456,41 @@ const updatePassword = async () => {
   }
 }
 
+// ====== FORGOT / RESET PASSWORD (EMAIL LINK) ======
+const resettingPassword = ref(false)
+
+const sendResetPasswordEmail = async () => {
+  resettingPassword.value = true
+
+  const payload = {
+    email: user.value.email
+  }
+
+  console.log('Payload:', payload)
+
+  try {
+    await ApiService.post('/forgot-password', payload)
+
+    ElNotification({
+      type: 'success',
+      message: 'Password reset link sent to your email',
+      duration: 3000
+    })
+  } catch (err) {
+    console.log(err)
+
+    ElNotification({
+      type: 'error',
+      message: err.response?.data?.message || 'Failed to send reset password email'
+    })
+  } finally {
+    resettingPassword.value = false
+  }
+}
+
 watch(searchQuery, (val) => {
   if (!val) selectedStatus.value = null
 })
-
-
 </script>
 
 <template>
@@ -757,9 +787,6 @@ watch(searchQuery, (val) => {
                 <div class="flex gap-6">
                   <div class="flex justify-between">
                     <p class="text-sm font-semibold mb-6">Personal Information</p>
-                    <v-btn variant="text" color="primary" :loading="updatingProfile" @click="updatePersonalData">
-                      Reset Password
-                    </v-btn>
                   </div>
 
                   <v-chip
@@ -812,11 +839,14 @@ watch(searchQuery, (val) => {
 
                 <!-- ================= CHANGE PASSWORD ================= -->
                 <div class="mt-12 max-w-3xl">
-                  
-
-                   <div class="flex justify-between">
+                  <div class="flex justify-between">
                     <h3 class="text-sm font-semibold mb-4">Change Password</h3>
-                    <v-btn variant="text" color="primary" :loading="updatingProfile" @click="updatePersonalData">
+                    <v-btn
+                      variant="text"
+                      color="primary"
+                      :loading="resettingPassword"
+                      @click="sendResetPasswordEmail"
+                    >
                       Reset Password
                     </v-btn>
                   </div>
