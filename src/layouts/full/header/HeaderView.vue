@@ -8,8 +8,16 @@ const auth = useAuthStore()
 
 const menuOpen = ref(false)
 const goToProfile = () => {
-  router.push('/profile')
+    menuOpen.value = false
+  router.push({
+    path: '/settings',
+    query: {
+      tab: 'account',
+      section: 'profile'
+    }
+  })
 }
+
 
 // const logout = async () => {
 //   await auth.logout()

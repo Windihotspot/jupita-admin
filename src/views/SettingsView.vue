@@ -4,7 +4,12 @@ import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
 import ApiService from '@/services/api'
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
-const tab = ref('products')
+import { useRoute } from 'vue-router'
+const route = useRoute()
+
+const tab = ref(route.query.tab || 'products')
+const activeTab = ref(route.query.section || 'profile')
+
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore()
@@ -161,16 +166,43 @@ const tabs = [
   { label: 'My Account', value: 'account' },
   { label: 'Api-Keys', value: 'api-keys' }
 ]
-const activeTab = ref('profile')
+
 
 const roles = ref([])
 const selectedRoleId = ref(null)
 
-const profile = ref({
-  fullname: 'Williams Adeyemi',
-  phone: '09065512525',
-  email: 'wadeyemi@getjupita.com',
-  role: 'Super Admin'
+// URL → Tabs
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab) tab.value = newTab
+  }
+)
+
+watch(
+  () => route.query.section,
+  (newSection) => {
+    if (newSection) activeTab.value = newSection
+  }
+)
+
+// Tabs → URL
+watch(tab, (newTab) => {
+  router.replace({
+    query: {
+      ...route.query,
+      tab: newTab
+    }
+  })
+})
+
+watch(activeTab, (newSection) => {
+  router.replace({
+    query: {
+      ...route.query,
+      section: newSection
+    }
+  })
 })
 
 // ----------------------

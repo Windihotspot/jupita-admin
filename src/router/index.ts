@@ -6,6 +6,7 @@ import SettingsView from '@/views/SettingsView.vue'
 import TenantsDetails from '@/views/TenantsDetails.vue'
 import ProductDetails from '@/views/ProductDetails.vue'
 import AccountsView from '@/views/AccountsView.vue'
+import ResetPassword from '@/views/ResetPassword.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,7 +48,12 @@ const router = createRouter({
       name: 'accounts',
       component: AccountsView,
       props: true
-    }
+    },
+     {
+      path: '/passwordreset',
+      name: 'passwordreset',
+      component: ResetPassword
+    },
   ]
 })
 
