@@ -981,7 +981,7 @@ watch(searchQuery, (val) => {
 
                   <el-dialog
                     v-model="showRoleDialog"
-                    title="Update Admin Role"
+                 
                     width="400px"
                     :before-close="() => (showRoleDialog = false)"
                   >

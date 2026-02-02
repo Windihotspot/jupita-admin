@@ -269,7 +269,8 @@ import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 import { ElNotification } from 'element-plus'
 import ApiService from '@/services/api'
-
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
 const route = useRoute()
 const token = route.query.token
 console.log('Reset token from URL:', token)
@@ -321,6 +322,7 @@ const validateForm = () => {
 }
 
 const onSubmit = async () => {
+      console.log("token:", auth.token);
    console.log('Submitting form...');
     console.log('Password:', password);
     console.log('Confirm Password:', confirmPassword);
@@ -344,7 +346,7 @@ const onSubmit = async () => {
       
       {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${auth.token}`
         }
       }
     )
@@ -357,11 +359,10 @@ const onSubmit = async () => {
     })
     router.push('/')
   } catch (error) {
-    console.error('Error Response Data:', error.data);
-      console.error('Error Response Status:', error.status);
+    console.log('Error Response Data:', error);
+      console.error('Error Response Status:', error);
     ElNotification({
-      title: 'Error',
-      message: error.response?.data?.message || 'Failed to reset password.',
+      message: error.response?.data?.data.message || 'Failed to reset password.',
       type: 'error'
     })
   }
