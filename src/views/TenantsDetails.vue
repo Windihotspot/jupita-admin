@@ -464,10 +464,9 @@ onMounted(() => {
       <LoadingOverlay :visible="loading" message="Loading data..." />
     </div>
     <div v-else class="p-6 space-y-6">
-      <RouterLink to="/dashboard" class="absolute top-4 left-4">
-        <button class="flex items-center text-black text-lg font-normal">
-          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #2563eb"></i>
-          Back
+       <RouterLink to="/tenants">
+        <button class="mb-4 flex items-center text-black text-lg font-normal">
+          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #2563eb"></i> Back
         </button>
       </RouterLink>
       <!-- HEADER -->

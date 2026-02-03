@@ -274,30 +274,25 @@ watch([startDate, endDate], ([newStart, newEnd]) => {
 })
 
 onMounted(() => {
-  // Default last 30 days
+  // Default last 1 year
   const today = moment()
-  const thirtyDaysAgo = moment().subtract(30, 'days')
+  const oneYearAgo = moment().subtract(1, 'year')
 
-  startDate.value = thirtyDaysAgo.toDate()
+  startDate.value = oneYearAgo.toDate()
   endDate.value = today.toDate()
 
-  // Update the chip label
-  dateRangeLabel.value = `${thirtyDaysAgo.format('DD MMM YYYY')} - ${today.format('DD MMM YYYY')}`
+  // Update chip label
+  dateRangeLabel.value = `${oneYearAgo.format('DD MMM YYYY')} - ${today.format('DD MMM YYYY')}`
 
-  if (auth.isAuthenticated) {
-    // Populate summary cards
-    stats.total = auth.tenants
-    stats.active = auth.active_tenants
-    stats.inactive = auth.inactive_tenants
-    stats.pending = auth.pending_tenants ?? 0
-
-    // Populate chart if stats exist
-    stats.rawStats = auth.stats || {}
-    console.log('store stats:', stats.rawStats)
-    if (Object.keys(stats.rawStats).length) {
-      selectedProductName.value = 'Analyze'
-      buildChartFromStats()
-    }
-  }
+  // Fetch dashboard data from API (ignores store)
+  fetchDashboardData()
 })
+
 </script>
+
+
+<style scoped>
+.div{
+  
+}
+</style>
