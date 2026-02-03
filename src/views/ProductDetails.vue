@@ -215,7 +215,7 @@ const toggleGlobalStatus = async () => {
           <LoadingOverlay :visible="loading" message="Loading features..." />
         </div>
         <table v-else-if="hasFeatures" class="w-full text-sm border-collapse">
-          <thead class="border-b text-gray-500">
+          <thead class="border-b font-semibold">
             <tr>
               <th class="px-4 py-3 text-left">S/N</th>
               <th class="px-4 py-3 text-left">Feature Name</th>
@@ -229,7 +229,7 @@ const toggleGlobalStatus = async () => {
             <tr
               v-for="(feature, index) in features"
               :key="feature.id"
-              class="border-b last:border-none"
+              class="border-b last:border-none text-xs"
             >
               <td class="px-4 py-3">{{ index + 1 }}</td>
               <td class="px-4 py-3 font-medium">{{ feature.name }}</td>
@@ -237,7 +237,7 @@ const toggleGlobalStatus = async () => {
               <td class="px-4 py-3">
                 <span
                   v-if="feature.enabled !== null"
-                  class="px-2 py-0.5 rounded-full text-xs"
+                  class="px-2 py-0.5 rounded-full"
                   :class="
                     feature.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
                   "

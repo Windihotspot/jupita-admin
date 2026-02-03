@@ -656,7 +656,7 @@ watch(searchQuery, (val) => {
             <!-- Filter (Vuetify Select) -->
             <div class="flex items-center space-x-2 pt-2">
               <!-- Filter Icon -->
-              <i class="fa fa-filter"></i>
+              <i class="fa fa-filter text-blue pr-4"></i>
               <el-select
                 v-model="selectedStatus"
                 placeholder="Status"
@@ -694,7 +694,8 @@ watch(searchQuery, (val) => {
                 hide-details
                 variant="outlined"
                 class="w-64 bg-white"
-                prepend-inner-icon="mdi-magnify"
+                color="blue"
+                prepend-inner-icon="mdi-magnify text-blue"
               >
               </v-text-field>
             </div>
@@ -710,7 +711,7 @@ watch(searchQuery, (val) => {
             <table v-else class="min-w-full border-collapse">
               <!-- Header -->
               <thead class="bg-gray-50 border-b">
-                <tr class="text-left text-sm font-semibold text-gray-600">
+                <tr class="text-left text-sm font-semibold">
                   <th class="px-4 py-3">S/N</th>
                   <th class="px-4 py-3">Product Name</th>
                   <th class="px-4 py-3">Status</th>
@@ -934,8 +935,8 @@ watch(searchQuery, (val) => {
 
                 <div class="overflow-x-auto">
                   <table class="min-w-full border rounded-lg overflow-hidden">
-                    <thead class="bg-gray-100">
-                      <tr class="text-left text-sm font-semibold text-gray-600">
+                    <thead class="bg-gray-50">
+                      <tr class="text-left text-sm font-semibold">
                         <th class="px-4 py-3">S/N</th>
                         <th class="px-4 py-3">Full Name</th>
                         <th class="px-4 py-3">Role</th>

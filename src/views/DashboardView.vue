@@ -54,19 +54,19 @@
       <!-- Summary Cards -->
       <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="p-4 rounded-lg bg-blue-50">
-          <p class="text-gray-700">Total Number of Tenants</p>
+          <p class="text-sm">Total Number of Tenants</p>
           <h2 class="text-sm mt-6 font-bold">{{ stats.total }}</h2>
         </div>
         <div class="p-4 rounded-lg bg-green-50">
-          <p class="text-gray-700">Active Tenants</p>
+          <p class="text-sm">Active Tenants</p>
           <h2 class="text-sm mt-6 font-bold">{{ stats.active }}</h2>
         </div>
         <div class="p-4 rounded-lg bg-pink-50">
-          <p class="text-gray-700">Inactive Tenants</p>
+          <p class="text-sm">Inactive Tenants</p>
           <h2 class="text-sm mt-6 font-bold">{{ stats.inactive }}</h2>
         </div>
         <div class="p-4 rounded-lg bg-orange-50">
-          <p class="text-gray-700">Tenants Pending Approval</p>
+          <p class="text-sm">Tenants Pending Approval</p>
           <h2 class="text-sm mt-6 font-bold">{{ stats.pending }}</h2>
         </div>
       </div>

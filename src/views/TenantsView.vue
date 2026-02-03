@@ -8,10 +8,9 @@ import moment from 'moment'
 const auth = useAuthStore()
 import { useProductsStore } from '@/stores/products'
 
-console.log("Testing store independently")
+console.log('Testing store independently')
 const store = useProductsStore()
 store.fetchFeatures()
-
 
 const tenants = ref([])
 const loading = ref(false)
@@ -28,7 +27,6 @@ const selectedStatus = ref('All')
 const itemsPerPage = ref(10)
 const currentPage = ref(1)
 const searchQuery = ref('')
-
 
 // 🔥 FETCH TENANTS FUNCTION
 const fetchTenants = async () => {
@@ -321,7 +319,7 @@ const paginatedTenants = computed(() => {
         <!-- Filter (Vuetify Select) -->
         <div class="flex items-center space-x-2 pt-2">
           <!-- Filter Icon -->
-          <i class="fa fa-filter"></i>
+          <i class="fa fa-filter text-blue pr-4"></i>
 
           <el-select
             v-model="selectedStatus"
@@ -339,13 +337,14 @@ const paginatedTenants = computed(() => {
           </el-select>
 
           <v-text-field
-          v-model="searchQuery"
+            v-model="searchQuery"
             placeholder="Search Tenant "
             density="compact"
             hide-details
             variant="outlined"
             class="w-64"
-            prepend-inner-icon="mdi-magnify"
+            color="blue"
+            prepend-inner-icon="mdi-magnify text-blue"
           >
           </v-text-field>
         </div>
@@ -402,7 +401,7 @@ const paginatedTenants = computed(() => {
                   :to="{ name: 'tenants-details', params: { tenantId: tenant.tenant_id } }"
                 >
                   <span
-                    class="bg-[#1f5aa3] text-white px-4 py-1 rounded hover:bg-blue-600 cursor-pointer"
+                    class="text-white px-4 py-1 rounded bg-blue-500 hover:bg-blue-600 cursor-pointer"
                   >
                     View
                   </span>

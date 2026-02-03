@@ -548,10 +548,10 @@ onMounted(() => {
             }"
           >
             <div class="flex justify-between items-center mb-6">
-              <p class="font-medium text-xs">{{ item.title }}</p>
-              <i class="fa fa-chevron-down text-xs"></i>
+              <p class="text-xs">{{ item.title }}</p>
+             
             </div>
-            <p class="text-md font-bold mt-2">{{ item.value }}</p>
+            <p class="text-sm font-bold mt-2">{{ item.value }}</p>
           </div>
         </div>
         <div v-else class="text-center py-12 text-gray-400">
