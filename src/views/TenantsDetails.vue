@@ -501,11 +501,35 @@ onMounted(() => {
         </v-btn>
       </div>
 
-      <!-- DATE RANGE -->
-      <div class="bg-white p-4 rounded shadow w-max">
-        <div class="flex items-center gap-2">
-          <i class="fa fa-calendar text-gray-500"></i>
-          <span class="text-sm">{{ tenant.startDate }} - {{ tenant.endDate }}</span>
+      <div class="m-4 flex items-center gap-4">
+        <i class="fa-solid fa-filter pr-4 text-blue"></i>
+
+        <!-- Start Date -->
+        <el-date-picker
+          value-format="DD/MM/YYYY"
+          v-model="startDate"
+          type="date"
+          placeholder="Start date"
+          :default-value="null"
+          
+        />
+
+        <!-- End Date -->
+        <el-date-picker
+          value-format="DD/MM/YYYY"
+          v-model="endDate"
+          type="date"
+          placeholder="End date"
+          :default-value="null"
+          @change="fetchTenantDetails"
+        />
+
+        <!-- DATE RANGE -->
+        <div class="ml-auto bg-blue-100 p-2 rounded shadow w-max">
+          <div class="flex items-center gap-2">
+            <i class="fa fa-calendar text-gray-500"></i>
+            <span class="text-xs">{{ tenant.startDate }} - {{ tenant.endDate }}</span>
+          </div>
         </div>
       </div>
 

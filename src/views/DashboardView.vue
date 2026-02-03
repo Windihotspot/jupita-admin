@@ -35,17 +35,22 @@
             />
 
             <!-- Chip -->
-            <div
+            <div v-if="dateRangeLabel" class="ml-auto bg-blue-100 p-2 rounded shadow w-max">
+              <div class="flex items-center gap-2">
+                <i class="fa fa-calendar text-gray-500"></i>
+                <span class="text-xs">{{ dateRangeLabel }}</span>
+              </div>
+            </div>
+            <!-- <div
               v-if="dateRangeLabel"
               class="ml-auto bg-blue-100 text-[#1f5aa3] text-sm font-medium px-3 py-1 rounded-md"
             >
               {{ dateRangeLabel }}
-            </div>
+            </div> -->
           </div>
         </div>
       </div>
 
-      
       <!-- Summary Cards -->
       <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="p-4 rounded-lg bg-blue-50">
