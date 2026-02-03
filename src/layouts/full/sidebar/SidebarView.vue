@@ -51,7 +51,7 @@ const logout = async () => {
 
     <!-- Logo -->
     <div class="p-1">
-      <img src="/src/assets/jupita-white-logo.png" alt="" class="w-48"/>
+      <img src="/src/assets/jupita-white-logo.png" alt="" class="w-40"/>
     </div>
 
     <!-- Menu -->

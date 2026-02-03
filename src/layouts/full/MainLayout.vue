@@ -36,7 +36,8 @@ onMounted(() => {
     <!-- ---------------------------------------------- -->
     <v-app-bar app flat elevation="0" class="pa-2 shadow-none border-none!">
       <v-btn class="hidden-md-and-up" icon @click="drawer = !drawer">
-        <v-icon>fa-solid fa-bars</v-icon>
+        
+        <i class="fa-solid fa-bars"></i>
       </v-btn>
       <div class="logo pa-4">
         
