@@ -59,6 +59,10 @@ const features = computed(() => {
 
 console.log("features:", features.value)
 onMounted(async () => {
+<<<<<<< HEAD
+ 
+=======
+>>>>>>> 9103600c06431636bf976219bfc741223e9d56e1
   try {
     // Ensure products exist
     if (!storeLoaded.value) {
