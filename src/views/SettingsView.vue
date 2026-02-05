@@ -20,9 +20,10 @@ console.log('user:', user)
 import { useProductsStore } from '@/stores/products'
 
 const productsStore = useProductsStore()
-console.log('product store:', productsStore.value)
+
 
 const products = computed(() => productsStore.products)
+console.log('product store:', productsStore.value)
 const productsLoading = computed(() => productsStore.loading)
 const productsError = computed(() => productsStore.error)
 
@@ -218,32 +219,16 @@ const fetchAdminMembers = async () => {
   teamLoading.value = true
   teamError.value = null
 
-  console.group('📤 GET ADMIN MEMBERS REQUEST')
-  console.log('URL:', '/get-admin-members')
-  console.log('Method:', 'GET')
-  console.groupEnd()
-
   try {
     const response = await ApiService.get('/get-admin-members', {
       headers: {
         Authorization: `Bearer ${auth.token}`
       }
     })
-
-    console.group('📥 GET ADMIN MEMBERS RESPONSE')
-    console.log('Status:', response.status)
-    console.log('Data:', response.data)
-    console.groupEnd()
-
     team.value = response.data?.admins || []
   } catch (err) {
-    console.group('❌ GET ADMIN MEMBERS ERROR')
-    console.log('Status:', err.response?.status)
-    console.log('Data:', err.response?.data)
-    console.log('Error:', err)
-    console.groupEnd()
 
-    teamError.value = err.response?.data?.message || 'Failed to load admin members'
+    teamError.value = err.response?.data?.data.message || 'Failed to load admin members'
   } finally {
     teamLoading.value = false
   }
@@ -256,15 +241,12 @@ const fetchRoles = async () => {
         Authorization: `Bearer ${auth.token}`
       }
     })
-    console.log('roles response:', response)
     roles.value = response.data.roles.map((role) => ({
       id: role.id,
       title: role.title
     }))
-    console.log('Roles:', roles.value)
   } catch (err) {
     console.log('Error:', err)
-    console.groupEnd()
   }
 }
 

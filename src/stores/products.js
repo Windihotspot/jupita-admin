@@ -5,7 +5,6 @@ import { useAuthStore } from '@/stores/auth'
 export const useProductsStore = defineStore('products', {
   state: () => ({
     products: [],
-    features: [],
     loading: false,
     error: null
   }),
@@ -53,7 +52,7 @@ export const useProductsStore = defineStore('products', {
             Authorization: `Bearer ${auth.token}`
           }
         })
-
+        console.log("fetch products response:", res)
         const rawProducts = res.data?.products || res.data || []
 
         this.products = rawProducts.map((product) => ({
@@ -75,33 +74,6 @@ export const useProductsStore = defineStore('products', {
         product.global = newStatus === 'active'
       }
     },
-    async fetchFeatures() {
-      const auth = useAuthStore()
-      this.loading = true
-      this.error = null
-
-      try {
-        const res = await ApiService.get('/get-features', {
-          headers: {
-            Authorization: `Bearer ${auth.token}`
-          }
-        })
-        console.log("global features:", res)
-        if (res.data?.status === 'success') {
-          // assign features from backend
-          this.features = res.data.data.features.map((f) => ({
-            ...f,
-            enabled: f.global_status === 'active' // add computed enabled
-          }))
-        } else {
-          this.error = res.data?.message || 'Failed to fetch features'
-        }
-      } catch (err) {
-        console.log('Error fetching features:', err)
-        this.error = err.response?.data?.message || 'Failed to fetch features'
-      } finally {
-        this.loading = false
-      }
-    }
+    
   }
 })
