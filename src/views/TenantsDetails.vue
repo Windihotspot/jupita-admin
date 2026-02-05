@@ -37,7 +37,7 @@ const fetchTenantDetails = async (silent = false) => {
     end_date: endDate.value
   }
 
-  const token = localStorage.getItem('token')
+  const token = auth.token
 
   console.log('🔍 Fetch Tenant Details Payload:', params)
 
@@ -464,10 +464,9 @@ onMounted(() => {
       <LoadingOverlay :visible="loading" message="Loading data..." />
     </div>
     <div v-else class="p-6 space-y-6">
-      <RouterLink to="/dashboard" class="absolute top-4 left-4">
-        <button class="flex items-center text-black text-lg font-normal">
-          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #2563eb"></i>
-          Back
+       <RouterLink to="/tenants">
+        <button class="mb-4 flex items-center text-black text-lg font-normal">
+          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #2563eb"></i> Back
         </button>
       </RouterLink>
       <!-- HEADER -->
@@ -501,11 +500,35 @@ onMounted(() => {
         </v-btn>
       </div>
 
-      <!-- DATE RANGE -->
-      <div class="bg-white p-4 rounded shadow w-max">
-        <div class="flex items-center gap-2">
-          <i class="fa fa-calendar text-gray-500"></i>
-          <span class="text-sm">{{ tenant.startDate }} - {{ tenant.endDate }}</span>
+      <div class="m-4 flex items-center gap-4">
+        <i class="fa-solid fa-filter pr-4 text-blue"></i>
+
+        <!-- Start Date -->
+        <el-date-picker
+          value-format="DD/MM/YYYY"
+          v-model="startDate"
+          type="date"
+          placeholder="Start date"
+          :default-value="null"
+          
+        />
+
+        <!-- End Date -->
+        <el-date-picker
+          value-format="DD/MM/YYYY"
+          v-model="endDate"
+          type="date"
+          placeholder="End date"
+          :default-value="null"
+          @change="fetchTenantDetails"
+        />
+
+        <!-- DATE RANGE -->
+        <div class="ml-auto bg-blue-100 p-2 rounded shadow w-max">
+          <div class="flex items-center gap-2">
+            <i class="fa fa-calendar text-gray-500"></i>
+            <span class="text-xs">{{ tenant.startDate }} - {{ tenant.endDate }}</span>
+          </div>
         </div>
       </div>
 
@@ -524,10 +547,10 @@ onMounted(() => {
             }"
           >
             <div class="flex justify-between items-center mb-6">
-              <p class="font-medium text-xs">{{ item.title }}</p>
-              <i class="fa fa-chevron-down text-xs"></i>
+              <p class="text-xs">{{ item.title }}</p>
+             
             </div>
-            <p class="text-md font-bold mt-2">{{ item.value }}</p>
+            <p class="text-sm font-bold mt-2">{{ item.value }}</p>
           </div>
         </div>
         <div v-else class="text-center py-12 text-gray-400">

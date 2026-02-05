@@ -47,13 +47,6 @@ app.use(ElementPlus);
 // hydrate auth on refresh
 useAuthStore().hydrate();
 
-const urlParams = new URLSearchParams(window.location.search)
-const redirectPath = urlParams.get('redirect')
-
-if (redirectPath) {
-  router.push(redirectPath).catch(() => {})
-}
-
 app.mount('#app')
 
 AOS.init()

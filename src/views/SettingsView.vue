@@ -4,7 +4,12 @@ import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
 import ApiService from '@/services/api'
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
-const tab = ref('products')
+import { useRoute } from 'vue-router'
+const route = useRoute()
+
+const tab = ref(route.query.tab || 'products')
+const activeTab = ref(route.query.section || 'profile')
+
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore()
@@ -15,9 +20,10 @@ console.log('user:', user)
 import { useProductsStore } from '@/stores/products'
 
 const productsStore = useProductsStore()
-console.log('product store:', productsStore.value)
+
 
 const products = computed(() => productsStore.products)
+console.log('product store:', productsStore.value)
 const productsLoading = computed(() => productsStore.loading)
 const productsError = computed(() => productsStore.error)
 
@@ -161,16 +167,43 @@ const tabs = [
   { label: 'My Account', value: 'account' },
   { label: 'Api-Keys', value: 'api-keys' }
 ]
-const activeTab = ref('profile')
+
 
 const roles = ref([])
 const selectedRoleId = ref(null)
 
-const profile = ref({
-  fullname: 'Williams Adeyemi',
-  phone: '09065512525',
-  email: 'wadeyemi@getjupita.com',
-  role: 'Super Admin'
+// URL → Tabs
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab) tab.value = newTab
+  }
+)
+
+watch(
+  () => route.query.section,
+  (newSection) => {
+    if (newSection) activeTab.value = newSection
+  }
+)
+
+// Tabs → URL
+watch(tab, (newTab) => {
+  router.replace({
+    query: {
+      ...route.query,
+      tab: newTab
+    }
+  })
+})
+
+watch(activeTab, (newSection) => {
+  router.replace({
+    query: {
+      ...route.query,
+      section: newSection
+    }
+  })
 })
 
 // ----------------------
@@ -186,32 +219,16 @@ const fetchAdminMembers = async () => {
   teamLoading.value = true
   teamError.value = null
 
-  console.group('📤 GET ADMIN MEMBERS REQUEST')
-  console.log('URL:', '/get-admin-members')
-  console.log('Method:', 'GET')
-  console.groupEnd()
-
   try {
     const response = await ApiService.get('/get-admin-members', {
       headers: {
         Authorization: `Bearer ${auth.token}`
       }
     })
-
-    console.group('📥 GET ADMIN MEMBERS RESPONSE')
-    console.log('Status:', response.status)
-    console.log('Data:', response.data)
-    console.groupEnd()
-
     team.value = response.data?.admins || []
   } catch (err) {
-    console.group('❌ GET ADMIN MEMBERS ERROR')
-    console.log('Status:', err.response?.status)
-    console.log('Data:', err.response?.data)
-    console.log('Error:', err)
-    console.groupEnd()
 
-    teamError.value = err.response?.data?.message || 'Failed to load admin members'
+    teamError.value = err.response?.data?.data.message || 'Failed to load admin members'
   } finally {
     teamLoading.value = false
   }
@@ -224,15 +241,12 @@ const fetchRoles = async () => {
         Authorization: `Bearer ${auth.token}`
       }
     })
-    console.log('roles response:', response)
     roles.value = response.data.roles.map((role) => ({
       id: role.id,
       title: role.title
     }))
-    console.log('Roles:', roles.value)
   } catch (err) {
     console.log('Error:', err)
-    console.groupEnd()
   }
 }
 
@@ -382,7 +396,7 @@ const updatePersonalData = async () => {
       message: 'Profile updated successfully!',
       duration: 3000
     })
-    
+
     console.log('RESPONSE:', response)
     // ✅ single source of truth
     await auth.fetchUser()
@@ -456,11 +470,41 @@ const updatePassword = async () => {
   }
 }
 
+// ====== FORGOT / RESET PASSWORD (EMAIL LINK) ======
+const resettingPassword = ref(false)
+
+const sendResetPasswordEmail = async () => {
+  resettingPassword.value = true
+
+  const payload = {
+    email: user.value.email
+  }
+
+  console.log('Payload:', payload)
+
+  try {
+    await ApiService.post('/forgot-password', payload)
+
+    ElNotification({
+      type: 'success',
+      message: 'Password reset link sent to your email',
+      duration: 3000
+    })
+  } catch (err) {
+    console.log(err)
+
+    ElNotification({
+      type: 'error',
+      message: err.response?.data?.message || 'Failed to send reset password email'
+    })
+  } finally {
+    resettingPassword.value = false
+  }
+}
+
 watch(searchQuery, (val) => {
   if (!val) selectedStatus.value = null
 })
-
-
 </script>
 
 <template>
@@ -594,7 +638,7 @@ watch(searchQuery, (val) => {
             <!-- Filter (Vuetify Select) -->
             <div class="flex items-center space-x-2 pt-2">
               <!-- Filter Icon -->
-              <i class="fa fa-filter"></i>
+              <i class="fa fa-filter text-blue pr-4"></i>
               <el-select
                 v-model="selectedStatus"
                 placeholder="Status"
@@ -632,7 +676,8 @@ watch(searchQuery, (val) => {
                 hide-details
                 variant="outlined"
                 class="w-64 bg-white"
-                prepend-inner-icon="mdi-magnify"
+                color="blue"
+                prepend-inner-icon="mdi-magnify text-blue"
               >
               </v-text-field>
             </div>
@@ -648,7 +693,7 @@ watch(searchQuery, (val) => {
             <table v-else class="min-w-full border-collapse">
               <!-- Header -->
               <thead class="bg-gray-50 border-b">
-                <tr class="text-left text-sm font-semibold text-gray-600">
+                <tr class="text-left text-sm font-semibold">
                   <th class="px-4 py-3">S/N</th>
                   <th class="px-4 py-3">Product Name</th>
                   <th class="px-4 py-3">Status</th>
@@ -757,9 +802,6 @@ watch(searchQuery, (val) => {
                 <div class="flex gap-6">
                   <div class="flex justify-between">
                     <p class="text-sm font-semibold mb-6">Personal Information</p>
-                    <v-btn variant="text" color="primary" :loading="updatingProfile" @click="updatePersonalData">
-                      Reset Password
-                    </v-btn>
                   </div>
 
                   <v-chip
@@ -812,11 +854,14 @@ watch(searchQuery, (val) => {
 
                 <!-- ================= CHANGE PASSWORD ================= -->
                 <div class="mt-12 max-w-3xl">
-                  
-
-                   <div class="flex justify-between">
+                  <div class="flex justify-between">
                     <h3 class="text-sm font-semibold mb-4">Change Password</h3>
-                    <v-btn variant="text" color="primary" :loading="updatingProfile" @click="updatePersonalData">
+                    <v-btn
+                      variant="text"
+                      color="primary"
+                      :loading="resettingPassword"
+                      @click="sendResetPasswordEmail"
+                    >
                       Reset Password
                     </v-btn>
                   </div>
@@ -872,8 +917,8 @@ watch(searchQuery, (val) => {
 
                 <div class="overflow-x-auto">
                   <table class="min-w-full border rounded-lg overflow-hidden">
-                    <thead class="bg-gray-100">
-                      <tr class="text-left text-sm font-semibold text-gray-600">
+                    <thead class="bg-gray-50">
+                      <tr class="text-left text-sm font-semibold">
                         <th class="px-4 py-3">S/N</th>
                         <th class="px-4 py-3">Full Name</th>
                         <th class="px-4 py-3">Role</th>
@@ -919,7 +964,7 @@ watch(searchQuery, (val) => {
 
                   <el-dialog
                     v-model="showRoleDialog"
-                    title="Update Admin Role"
+                 
                     width="400px"
                     :before-close="() => (showRoleDialog = false)"
                   >

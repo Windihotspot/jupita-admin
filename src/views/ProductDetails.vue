@@ -23,63 +23,42 @@ const resolveProductName = (slug) => {
 
 const productId = route.params.productId
 
-const product = computed(() => productsStore.getById(productId))
-console.log('product:', product)
-
 const loading = ref(false)
 
 const storeLoaded = computed(() => productsStore.products.length > 0)
 
+const product = computed(() =>
+  storeLoaded.value ? productsStore.getById(route.params.productId) : null
+)
+
+const productReady = computed(() => !!product.value)
+
 const hasFeatures = computed(() => features.value.length > 0)
 
 const hasApiSource = computed(() => product.value?.features?.some((f) => f.api))
-const globalFeatures = ref([])
-
-const fetchFeatures = async () => {
-  try {
-    const res = await ApiService.get('/get-features', {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
-    })
-    console.log('Global features response:', res)
-    globalFeatures.value = res.data.features || []
-
-    console.log('Global features:', globalFeatures.value)
-  } catch (err) {
-    console.log('Error fetching features:', err)
-    ElNotification({
-      type: 'error',
-      message: 'Failed to fetch global features'
-    })
-  }
-}
 
 const features = computed(() => {
-  if (!product.value || !storeLoaded.value) return []
+  if (!productReady.value) return []
 
-  const map = productsStore.featureProductMap
-  const types = product.value.price_determinants_type || {}
+  const ids = product.value.feature_ids || {}
+  const statuses = product.value.feature_status || {}
   const prices = product.value.price_determinants || {}
+  const types = product.value.price_determinants_type || {}
 
-  return Object.keys(types)
-    .filter((slug) => map[slug])
-    .map((slug) => {
-      const backendFeature = globalFeatures.value.find((f) => f.function_name === slug)
-
-      return {
-        id: backendFeature?.id, // ✅ real backend feature ID
-        name: slug.replace(/_/g, ' ').toUpperCase(),
-        slug,
-        type: types[slug],
-        price: prices[slug],
-        enabled: backendFeature ? backendFeature.global_status === 'active' : null
-      }
-    })
+  return Object.keys(ids).map((slug) => ({
+    id: ids[slug],
+    slug,
+    name: slug.replace(/_/g, ' ').toUpperCase(),
+    enabled: statuses[slug] === 'active',
+    price: prices[slug] ?? null,
+    type: types[slug] ?? null,
+    api: null // unless you have this elsewhere
+  }))
 })
 
+
+console.log("features:", features.value)
 onMounted(async () => {
- 
   try {
     // Ensure products exist
     if (!storeLoaded.value) {
@@ -104,35 +83,42 @@ const toggleFeatureStatus = async (feature) => {
   if (!feature) return
 
   const previous = feature.enabled
-  const newStatus = feature.enabled ? 'deactivate' : 'activate'
+  const newStatus = previous ? 'deactivate' : 'activate'
 
   toggleFeatureLoading.value[feature.slug] = true
-
+  const payload = {
+    feature_id: feature.id,
+    status: newStatus
+  }
+  console.log('features status toggle payload:', payload)
   try {
-    const payload = {
-      feature_id: feature.id, 
-      status: newStatus
-    }
-    console.log('toggle feature status payload:', payload)
-    const res = await ApiService.put('/update-global-product-feature-availability', payload, {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
+   const res = await ApiService.put('/update-global-product-feature-availability', payload, {
+      headers: { Authorization: `Bearer ${auth.token}` }
     })
-    console.log('toggle feature status response:', res)
+
+    console.log("toggle feature res:", res)
+    
+
+    const backendFeature = product.value.features.find((f) => f.id === feature.id)
+    if (backendFeature) {
+      backendFeature.global_status = feature.enabled ? 'active' : 'inactive'
+    }
+
+     product.value.feature_status = {
+      ...product.value.feature_status,
+      [slug]: newStatus
+    }
+
 
     ElNotification({
       type: 'success',
-      message: newStatus === 'activate' ? `${feature.name} enabled` : `${feature.name} disabled`,
-      duration: 2500
+      message: feature.enabled ? `${feature.name} enabled` : `${feature.name} disabled`
     })
   } catch (err) {
-    console.log('Error toggling feature:', err)
     feature.enabled = previous
-
     ElNotification({
       type: 'error',
-      message: err.response?.data?.message || `Failed to update ${feature.name}`
+      message: err.response?.data?.message || 'Failed to update feature'
     })
   } finally {
     toggleFeatureLoading.value[feature.slug] = false
@@ -196,13 +182,13 @@ const toggleGlobalStatus = async () => {
 
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-600">Global Control:</span>
-          <el-switch
+          <!-- <el-switch
             v-model="product.global"
             :loading="toggleGlobalLoading"
             active-color="#16a34a"
             inactive-color="#dc2626"
             @change="toggleGlobalStatus"
-          />
+          /> -->
         </div>
       </div>
 
@@ -214,7 +200,7 @@ const toggleGlobalStatus = async () => {
           <LoadingOverlay :visible="loading" message="Loading features..." />
         </div>
         <table v-else-if="hasFeatures" class="w-full text-sm border-collapse">
-          <thead class="border-b text-gray-500">
+          <thead class="border-b font-semibold">
             <tr>
               <th class="px-4 py-3 text-left">S/N</th>
               <th class="px-4 py-3 text-left">Feature Name</th>
@@ -228,7 +214,7 @@ const toggleGlobalStatus = async () => {
             <tr
               v-for="(feature, index) in features"
               :key="feature.id"
-              class="border-b last:border-none"
+              class="border-b last:border-none text-xs"
             >
               <td class="px-4 py-3">{{ index + 1 }}</td>
               <td class="px-4 py-3 font-medium">{{ feature.name }}</td>
@@ -236,7 +222,7 @@ const toggleGlobalStatus = async () => {
               <td class="px-4 py-3">
                 <span
                   v-if="feature.enabled !== null"
-                  class="px-2 py-0.5 rounded-full text-xs"
+                  class="px-2 py-0.5 rounded-full"
                   :class="
                     feature.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
                   "
@@ -248,15 +234,19 @@ const toggleGlobalStatus = async () => {
               </td>
 
               <td class="px-4 py-3">
-                <el-switch
-  :model-value="feature.enabled"
-  :loading="toggleFeatureLoading[feature.slug] || feature.enabled === null"
-  :disabled="toggleFeatureLoading[feature.slug] || feature.enabled === null"
-  active-color="#16a34a"
-  inactive-color="#dc2626"
-  @update:model-value="(val) => toggleFeatureStatus(feature, val)"
-/>
+                <div v-if="!productReady" class="py-12">
+                  <LoadingOverlay visible message="Loading product..." />
+                </div>
 
+                <div v-else>
+                  <el-switch
+                    v-model="feature.enabled"
+                    :loading="toggleFeatureLoading[feature.slug]"
+                    @change="() => toggleFeatureStatus(feature)"
+                    active-color="#16a34a"
+                    inactive-color="#dc2626"
+                  />
+                </div>
               </td>
 
               <td v-if="hasApiSource" class="px-4 py-3">

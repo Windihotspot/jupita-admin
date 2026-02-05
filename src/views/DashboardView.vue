@@ -35,33 +35,38 @@
             />
 
             <!-- Chip -->
-            <div
+            <div v-if="dateRangeLabel" class="ml-auto bg-blue-100 p-2 rounded shadow w-max">
+              <div class="flex items-center gap-2">
+                <i class="fa fa-calendar text-gray-500"></i>
+                <span class="text-xs">{{ dateRangeLabel }}</span>
+              </div>
+            </div>
+            <!-- <div
               v-if="dateRangeLabel"
               class="ml-auto bg-blue-100 text-[#1f5aa3] text-sm font-medium px-3 py-1 rounded-md"
             >
               {{ dateRangeLabel }}
-            </div>
+            </div> -->
           </div>
         </div>
       </div>
 
-      
       <!-- Summary Cards -->
       <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="p-4 rounded-lg bg-blue-50">
-          <p class="text-gray-700">Total Number of Tenants</p>
+          <p class="text-sm">Total Number of Tenants</p>
           <h2 class="text-sm mt-6 font-bold">{{ stats.total }}</h2>
         </div>
         <div class="p-4 rounded-lg bg-green-50">
-          <p class="text-gray-700">Active Tenants</p>
+          <p class="text-sm">Active Tenants</p>
           <h2 class="text-sm mt-6 font-bold">{{ stats.active }}</h2>
         </div>
         <div class="p-4 rounded-lg bg-pink-50">
-          <p class="text-gray-700">Inactive Tenants</p>
+          <p class="text-sm">Inactive Tenants</p>
           <h2 class="text-sm mt-6 font-bold">{{ stats.inactive }}</h2>
         </div>
         <div class="p-4 rounded-lg bg-orange-50">
-          <p class="text-gray-700">Tenants Pending Approval</p>
+          <p class="text-sm">Tenants Pending Approval</p>
           <h2 class="text-sm mt-6 font-bold">{{ stats.pending }}</h2>
         </div>
       </div>
@@ -269,30 +274,25 @@ watch([startDate, endDate], ([newStart, newEnd]) => {
 })
 
 onMounted(() => {
-  // Default last 30 days
+  // Default last 1 year
   const today = moment()
-  const thirtyDaysAgo = moment().subtract(30, 'days')
+  const oneYearAgo = moment().subtract(1, 'year')
 
-  startDate.value = thirtyDaysAgo.toDate()
+  startDate.value = oneYearAgo.toDate()
   endDate.value = today.toDate()
 
-  // Update the chip label
-  dateRangeLabel.value = `${thirtyDaysAgo.format('DD MMM YYYY')} - ${today.format('DD MMM YYYY')}`
+  // Update chip label
+  dateRangeLabel.value = `${oneYearAgo.format('DD MMM YYYY')} - ${today.format('DD MMM YYYY')}`
 
-  if (auth.isAuthenticated) {
-    // Populate summary cards
-    stats.total = auth.tenants
-    stats.active = auth.active_tenants
-    stats.inactive = auth.inactive_tenants
-    stats.pending = auth.pending_tenants ?? 0
-
-    // Populate chart if stats exist
-    stats.rawStats = auth.stats || {}
-    console.log('store stats:', stats.rawStats)
-    if (Object.keys(stats.rawStats).length) {
-      selectedProductName.value = 'Analyze'
-      buildChartFromStats()
-    }
-  }
+  // Fetch dashboard data from API (ignores store)
+  fetchDashboardData()
 })
+
 </script>
+
+
+<style scoped>
+.div{
+  
+}
+</style>

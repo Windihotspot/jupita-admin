@@ -1,11 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import DasboardView from '@/views/DasboardView.vue'
+import DashboardView from '@/views/DashboardView.vue'
 import LoginView from '@/views/LoginView.vue'
 import TenantsView from '@/views/TenantsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import TenantsDetails from '@/views/TenantsDetails.vue'
 import ProductDetails from '@/views/ProductDetails.vue'
 import AccountsView from '@/views/AccountsView.vue'
+import ResetPassword from '@/views/ResetPassword.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -18,7 +19,7 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: DasboardView
+      component: DashboardView
     },
     {
       path: '/tenants',
@@ -47,7 +48,12 @@ const router = createRouter({
       name: 'accounts',
       component: AccountsView,
       props: true
-    }
+    },
+     {
+      path: '/passwordreset',
+      name: 'passwordreset',
+      component: ResetPassword
+    },
   ]
 })
 
