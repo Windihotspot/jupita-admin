@@ -8,9 +8,7 @@ import moment from 'moment'
 const auth = useAuthStore()
 import { useProductsStore } from '@/stores/products'
 
-console.log("Testing store independently")
-const store = useProductsStore()
-store.fetchFeatures()
+
 
 
 const tenants = ref([])

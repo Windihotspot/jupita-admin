@@ -79,8 +79,7 @@ const features = computed(() => {
 })
 
 onMounted(async () => {
-  // Fetch global feature status + IDs
-  await fetchFeatures()
+ 
   try {
     // Ensure products exist
     if (!storeLoaded.value) {
