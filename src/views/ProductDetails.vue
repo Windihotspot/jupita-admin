@@ -80,80 +80,82 @@ onMounted(async () => {
 const toggleFeatureLoading = ref({})
 
 const toggleFeatureStatus = async (feature) => {
-  if (!feature) return
+  if (!feature || !product.value) return
 
-  const previous = feature.enabled
-  const newStatus = previous ? 'deactivate' : 'activate'
+  const slug = feature.slug
+  const wasEnabled = product.value.feature_status[slug] === 'active'
 
-  toggleFeatureLoading.value[feature.slug] = true
-  const payload = {
-    feature_id: feature.id,
-    status: newStatus
-  }
-  console.log('features status toggle payload:', payload)
+  toggleFeatureLoading.value[slug] = true
+
   try {
-   const res = await ApiService.put('/update-global-product-feature-availability', payload, {
-      headers: { Authorization: `Bearer ${auth.token}` }
-    })
+    await ApiService.put(
+      '/update-global-product-feature-availability',
+      {
+        feature_id: feature.id,
+        status: wasEnabled ? 'deactivate' : 'activate'
+      },
+      {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      }
+    )
 
-    console.log("toggle feature res:", res)
-    
-
-    const backendFeature = product.value.features.find((f) => f.id === feature.id)
-    if (backendFeature) {
-      backendFeature.global_status = feature.enabled ? 'active' : 'inactive'
-    }
-
-     product.value.feature_status = {
+    // ✅ UPDATE SOURCE OF TRUTH
+    product.value.feature_status = {
       ...product.value.feature_status,
-      [slug]: newStatus
+      [slug]: wasEnabled ? 'inactive' : 'active'
     }
-
 
     ElNotification({
       type: 'success',
-      message: feature.enabled ? `${feature.name} enabled` : `${feature.name} disabled`
+      message: `${feature.name} ${wasEnabled ? 'disabled' : 'enabled'}`
     })
   } catch (err) {
-    feature.enabled = previous
+    console.log('toggle feature error:', err)
     ElNotification({
       type: 'error',
       message: err.response?.data?.message || 'Failed to update feature'
     })
   } finally {
-    toggleFeatureLoading.value[feature.slug] = false
+    toggleFeatureLoading.value[slug] = false
   }
 }
 
+
 const toggleGlobalLoading = ref(false)
 
-const toggleGlobalStatus = async () => {
+const toggleGlobalStatus = async (enabled) => {
   if (!product.value) return
 
-  const previous = product.value.global
-  const newStatus = previous ? 'inactive' : 'active'
+  const newStatus = enabled ? 'active' : 'inactive'
+  const previousStatus = product.value.global_status
 
   toggleGlobalLoading.value = true
 
   try {
     await ApiService.put(
       '/toggle-product-status',
-      { product_id: product.value.id, new_status: newStatus },
-      { headers: { Authorization: `Bearer ${auth.token}` } }
+      {
+        product_id: product.value.id,
+        new_status: newStatus
+      },
+      {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      }
     )
 
-    // Update the store
-    productsStore.updateProductStatus(product.value.id, newStatus)
+    // ✅ SOURCE OF TRUTH UPDATE
+    product.value.global_status = newStatus
 
     ElNotification({
       type: 'success',
-      message: newStatus === 'active' ? 'Product activated' : 'Product deactivated',
-      duration: 2500
+      message:
+        newStatus === 'active'
+          ? 'Product activated'
+          : 'Product deactivated'
     })
   } catch (err) {
-    console.log('Error toggling product:', err)
     // rollback UI
-    product.value.global = previous
+    product.value.global_status = previousStatus
 
     ElNotification({
       type: 'error',
@@ -163,6 +165,7 @@ const toggleGlobalStatus = async () => {
     toggleGlobalLoading.value = false
   }
 }
+
 </script>
 
 <template>
@@ -182,13 +185,13 @@ const toggleGlobalStatus = async () => {
 
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-600">Global Control:</span>
-          <!-- <el-switch
+           <el-switch
             v-model="product.global"
             :loading="toggleGlobalLoading"
             active-color="#16a34a"
             inactive-color="#dc2626"
             @change="toggleGlobalStatus"
-          /> -->
+          />
         </div>
       </div>
 
