@@ -11,10 +11,10 @@
         <LoadingOverlay :visible="loading" message="Loading dashboard..." />
       </div>
       <div v-else>
-        <div class="m-4">
+        <div class="my-4">
           <!-- Date Filter -->
           <div class="m-4 flex items-center gap-4">
-            <i class="fa-solid fa-filter pr-4 text-blue"></i>
+            <i class="fa-solid fa-filter pr-2 text-[#1F5AA3]"></i>
 
             <!-- Start Date -->
             <el-date-picker
@@ -74,8 +74,8 @@
       <!-- Chart -->
       <div class="bg-white p-4 rounded-lg shadow">
         <!-- Date Filter -->
-        <div class="m-4 flex items-center gap-4">
-          <i class="fa-solid fa-filter pr-4 text-blue"></i>
+        <div class="my-4 flex items-center gap-4">
+          <i class="fa-solid fa-filter pr-2 text-[#1F5AA3]"></i>
 
           <!-- products-->
           <el-select

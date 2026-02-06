@@ -1,6 +1,8 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
-import { ref, onMounted, computed } from 'vue'
+import { useFormattedFields } from '@/composables/useFormattedFields'
+
+import { ref, watch, onMounted, computed } from 'vue'
 import ApiService from '@/services/api'
 import { useRoute } from 'vue-router'
 import { ElNotification, ElMessageBox, ElTooltip, ElDialog } from 'element-plus'
@@ -203,6 +205,27 @@ const toggleMemberStatus = async (member) => {
   }
 }
 
+const lastFetchedRange = ref({
+  start: startDate.value,
+  end: endDate.value
+})
+watch([startDate, endDate], ([newStart, newEnd]) => {
+  if (!newStart || !newEnd) return
+
+  const hasChanged =
+    newStart !== lastFetchedRange.value.start || newEnd !== lastFetchedRange.value.end
+
+  if (!hasChanged) return
+
+  // ✅ only fetch when BOTH are settled and different
+  fetchTenantDetails()
+  // update snapshot
+  lastFetchedRange.value = {
+    start: newStart,
+    end: newEnd
+  }
+})
+
 const toggleProductAvailability = async (product) => {
   const action = product.enabled ? 'deactivate' : 'activate'
   const actionLabel = product.enabled ? 'Deactivate' : 'Activate'
@@ -297,13 +320,19 @@ const deleteMember = async (member) => {
   }
 }
 const editingProduct = ref(null)
-const newPrice = ref(0)
+const newPrice = ref({
+  price: null
+})
+const formattedPrice = useFormattedFields(newPrice.value, 'price', {
+  currency: true
+})
+
 const savingPrice = ref(false)
 const showPriceDialog = ref(false)
 
 const openPriceDialog = (item) => {
   editingProduct.value = item
-  newPrice.value = item.price
+  newPrice.value.price = item.price
   showPriceDialog.value = true
 }
 
@@ -320,7 +349,7 @@ const updateProductPrice = async () => {
   const payload = {
     tenant_id: tenantId.value,
     product_id: editingProduct.value.productId,
-    price: Number(newPrice.value)
+    price: newPrice.value.price
   }
   console.log('update price payload:', payload)
 
@@ -464,9 +493,9 @@ onMounted(() => {
       <LoadingOverlay :visible="loading" message="Loading data..." />
     </div>
     <div v-else class="p-6 space-y-6">
-       <RouterLink to="/tenants">
+      <RouterLink to="/tenants">
         <button class="mb-4 flex items-center text-black text-lg font-normal">
-          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #2563eb"></i> Back
+          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #1f5aa3"></i> Back
         </button>
       </RouterLink>
       <!-- HEADER -->
@@ -500,8 +529,8 @@ onMounted(() => {
         </v-btn>
       </div>
 
-      <div class="m-4 flex items-center gap-4">
-        <i class="fa-solid fa-filter pr-4 text-blue"></i>
+      <div class="my-4 flex items-center gap-4">
+        <i class="fa-solid fa-filter pr-2 text-[#1F5AA3]"></i>
 
         <!-- Start Date -->
         <el-date-picker
@@ -510,7 +539,6 @@ onMounted(() => {
           type="date"
           placeholder="Start date"
           :default-value="null"
-          
         />
 
         <!-- End Date -->
@@ -520,7 +548,6 @@ onMounted(() => {
           type="date"
           placeholder="End date"
           :default-value="null"
-          @change="fetchTenantDetails"
         />
 
         <!-- DATE RANGE -->
@@ -548,7 +575,6 @@ onMounted(() => {
           >
             <div class="flex justify-between items-center mb-6">
               <p class="text-xs">{{ item.title }}</p>
-             
             </div>
             <p class="text-sm font-bold mt-2">{{ item.value }}</p>
           </div>
@@ -684,7 +710,16 @@ onMounted(() => {
                   </tr>
                   <tr v-for="(item, index) in billing" :key="index" class="p-2">
                     <td class="py-2">{{ item.service }}</td>
-                    <td>{{ item.price }}</td>
+                    <td>
+                      {{
+                        new Intl.NumberFormat('en-NG', {
+                          style: 'currency',
+                          currency: 'NGN',
+                          minimumFractionDigits: 0
+                        }).format(item.price)
+                      }}
+                    </td>
+
                     <td>
                       <i
                         class="fa fa-edit text-gray-500 cursor-pointer"
@@ -703,9 +738,9 @@ onMounted(() => {
                   <v-card-text>
                     <v-text-field
                       density="compact"
-                      v-model="newPrice"
+                      v-model="formattedPrice"
                       label="New Price"
-                      type="number"
+                    
                       variant="outlined"
                       dense
                     />

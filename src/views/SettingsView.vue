@@ -21,7 +21,6 @@ import { useProductsStore } from '@/stores/products'
 
 const productsStore = useProductsStore()
 
-
 const products = computed(() => productsStore.products)
 console.log('product store:', productsStore.value)
 const productsLoading = computed(() => productsStore.loading)
@@ -139,21 +138,12 @@ const createAdmin = async () => {
       type: 'success',
       duration: 3000
     })
-    console.group('📥 CREATE ADMIN RESPONSE')
-    console.log('Status:', response.status)
-    console.log('Data:', response.data)
-    console.groupEnd()
-
+     fetchAdminMembers()
     showCreateDialog.value = false
     resetCreateForm()
+    fetchAdminMembers()
     // optionally refresh admins list here
   } catch (err) {
-    console.group('❌ CREATE ADMIN ERROR')
-    console.log('Status:', err.response?.status)
-    console.log('Data:', err.response?.data)
-    console.log('Error:', err)
-    console.groupEnd()
-
     createError.value = err.response?.data?.message || 'Failed to create admin'
   } finally {
     createLoading.value = false
@@ -167,7 +157,6 @@ const tabs = [
   { label: 'My Account', value: 'account' },
   { label: 'Api-Keys', value: 'api-keys' }
 ]
-
 
 const roles = ref([])
 const selectedRoleId = ref(null)
@@ -227,7 +216,6 @@ const fetchAdminMembers = async () => {
     })
     team.value = response.data?.admins || []
   } catch (err) {
-
     teamError.value = err.response?.data?.data.message || 'Failed to load admin members'
   } finally {
     teamLoading.value = false
@@ -390,7 +378,7 @@ const updatePersonalData = async () => {
     const response = await ApiService.put('/update-admin-data', payload, {
       headers: { Authorization: `Bearer ${auth.token}` }
     })
-
+    fetchAdminMembers()
     ElNotification({
       type: 'success',
       message: 'Profile updated successfully!',
@@ -600,19 +588,6 @@ watch(searchQuery, (val) => {
           <h1 class="text-xl font-bold text-gray-900">Settings</h1>
           <p class="text-gray-500 text-sm mt-1">Manage platform wide configurations</p>
         </div>
-
-        <v-btn
-          @click="showCreateDialog = true"
-          size="large"
-          class="normal-case custom-btn hover:bg-blue-700 text-white text-sm font-semibold px-6 py-3 rounded-md shadow-md"
-        >
-          <span
-            class="bg-white text-blue-600 rounded-full p-1 flex items-center justify-center w-4 h-4 mr-2"
-          >
-            <i class="fa-solid fa-plus text-sm text-[#1f5aa3]"></i>
-          </span>
-          Add New
-        </v-btn>
       </div>
       <v-tabs v-model="tab" density="compact">
         <v-tab
@@ -638,7 +613,7 @@ watch(searchQuery, (val) => {
             <!-- Filter (Vuetify Select) -->
             <div class="flex items-center space-x-2 pt-2">
               <!-- Filter Icon -->
-              <i class="fa fa-filter text-blue pr-4"></i>
+              <i class="fa fa-filter text-[#1F5AA3] pr-2"></i>
               <el-select
                 v-model="selectedStatus"
                 placeholder="Status"
@@ -817,12 +792,16 @@ watch(searchQuery, (val) => {
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                   <v-text-field
+                    readonly
+                    disabled
                     v-model="personalData.firstname"
                     label="First Name"
                     variant="outlined"
                     density="comfortable"
                   />
                   <v-text-field
+                    readonly
+                    disabled
                     v-model="personalData.lastname"
                     label="Last Name"
                     variant="outlined"
@@ -835,6 +814,8 @@ watch(searchQuery, (val) => {
                     density="comfortable"
                   />
                   <v-text-field
+                    readonly
+                    disabled
                     v-model="personalData.email"
                     label="Email Address"
                     variant="outlined"
@@ -913,8 +894,23 @@ watch(searchQuery, (val) => {
 
               <!-- ================= TEAM ================= -->
               <section v-else>
-                <p class="text-sm font-semibold mb-6">Team</p>
+                <div class="flex justify-between">
+                  <p class="text-sm font-semibold mb-6">Team</p>
 
+                <v-btn
+                  @click="showCreateDialog = true"
+                  size="mediumi"
+                  class="normal-case custom-btn hover:bg-blue-700 text-white text-sm font-semibold px-6 py-3 rounded-md shadow-md"
+                >
+                  <span
+                    class="bg-white text-blue-600 rounded-full p-1 flex items-center justify-center w-4 h-4 mr-2"
+                  >
+                    <i class="fa-solid fa-plus text-sm text-[#1f5aa3]"></i>
+                  </span>
+                  Add New
+                </v-btn>
+                </div>
+                
                 <div class="overflow-x-auto">
                   <table class="min-w-full border rounded-lg overflow-hidden">
                     <thead class="bg-gray-50">
@@ -964,7 +960,6 @@ watch(searchQuery, (val) => {
 
                   <el-dialog
                     v-model="showRoleDialog"
-                 
                     width="400px"
                     :before-close="() => (showRoleDialog = false)"
                   >

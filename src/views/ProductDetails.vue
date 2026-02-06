@@ -59,10 +59,6 @@ const features = computed(() => {
 
 console.log("features:", features.value)
 onMounted(async () => {
-<<<<<<< HEAD
- 
-=======
->>>>>>> 9103600c06431636bf976219bfc741223e9d56e1
   try {
     // Ensure products exist
     if (!storeLoaded.value) {
@@ -175,17 +171,15 @@ const toggleGlobalStatus = async (enabled) => {
 <template>
   <MainLayout>
     <div class="p-6 bg-gray-50 min-h-screen">
-      <RouterLink to="/settings">
-        <button class="mb-4 flex items-center text-black text-lg font-normal">
-          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #2563eb"></i> Back
-        </button>
-      </RouterLink>
+      
 
       <!-- Header -->
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-lg font-semibold flex items-center gap-2">
-          <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700"> </span>
-        </h1>
+      <div class="flex justify-between items-center my-6">
+        <RouterLink to="/settings">
+        <button class="mb-4 flex items-center text-black text-lg font-normal">
+          <i class="fas fa-circle-arrow-left mr-2 text-xl" style="color: #1F5AA3"></i> Back
+        </button>
+      </RouterLink>
 
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-600">Global Control:</span>
