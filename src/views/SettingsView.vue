@@ -951,61 +951,62 @@ const toggleAdminStatus = async (member, newStatus) => {
                 </div>
                 
                 <div class="overflow-x-auto">
-                  <table class="min-w-full border rounded-lg overflow-hidden">
-                    <thead class="bg-gray-50">
-                      <tr class="text-left text-sm font-semibold">
-                        <th class="px-4 py-3">S/N</th>
-                        <th class="px-4 py-3">Full Name</th>
-                        <th class="px-4 py-3">Role</th>
-                        <th class="px-4 py-3">Status</th>
-                        <th class="px-4 py-3"></th>
-                      </tr>
-                    </thead>
+                  <tbody>
+  <!-- Loading Skeleton -->
+  <template v-if="teamLoading">
+    <tr v-for="n in 8" :key="n" class="border-t">
+      <td class="px-4 py-3">
+        <v-skeleton-loader type="text" :loading="true" class="w-6 h-4 rounded-sm shining" />
+      </td>
+      <td class="px-4 py-3">
+        <v-skeleton-loader type="text" :loading="true"  class="w-32 h-4 rounded-sm shining" />
+      </td>
+      <td class="px-4 py-3">
+        <v-skeleton-loader type="text" :loading="true"  class="w-20 h-4 rounded-sm shining" />
+      </td>
+      <td class="px-4 py-3">
+        <v-skeleton-loader type="text" :loading="true"  class="w-12 h-4 rounded-full shining" />
+      </td>
+      <td class="px-4 py-3">
+        <v-skeleton-loader type="text" :loading="true"  class="w-24 h-4 rounded-sm shining" />
+      </td>
+    </tr>
+  </template>
 
-                    <tbody>
-                      <tr v-for="(member, index) in team" :key="member.id" class="border-t text-sm">
-                        <td class="px-4 py-3">{{ index + 1 }}</td>
-                        <td class="px-4 py-3">{{ member.firstname + ' ' + member.lastname }}</td>
-                        <td class="px-4 py-3">
-                          {{ roles.find((r) => r.id === member.role_id)?.title || 'Unknown Role' }}
-                        </td>
+  <!-- Actual Data -->
+  <template v-else>
+    <tr v-for="(member, index) in team" :key="member.id" class="border-t text-sm">
+      <td class="px-4 py-3">{{ index + 1 }}</td>
+      <td class="px-4 py-3">{{ member.firstname + ' ' + member.lastname }}</td>
+      <td class="px-4 py-3">
+        {{ roles.find((r) => r.id === member.role_id)?.title || 'Unknown Role' }}
+      </td>
+      <td class="px-4 py-3">
+        <span
+          class="px-3 py-1 rounded-full text-xs font-medium"
+          :class="member.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'"
+        >
+          {{ member.status }}
+        </span>
+      </td>
+      <td class="px-4 py-3">
+        <div class="flex items-center gap-4 text-gray-500">
+          <i @click="openRoleDialog(member)" class="fas fa-pen cursor-pointer hover:text-blue-600"></i>
+          <el-switch
+            :model-value="member.status"
+            :active-value="'active'"
+            :inactive-value="'inactive'"
+            :loading="toggleLoadingMap[member.id]"
+            :disabled="toggleLoadingMap[member.id]"
+            @change="(val) => toggleAdminStatus(member, val)"
+          />
+          <i class="fas fa-trash cursor-pointer text-red hover:text-red-600"></i>
+        </div>
+      </td>
+    </tr>
+  </template>
+</tbody>
 
-                        <td class="px-4 py-3">
-                          <span
-                            class="px-3 py-1 rounded-full text-xs font-medium"
-                            :class="
-                              member.status === 'active'
-                                ? 'bg-green-100 text-green-600'
-                                : 'bg-red-100 text-red-600'
-                            "
-                          >
-                            {{ member.status }}
-                          </span>
-                        </td>
-
-                        <td class="px-4 py-3">
-                          <div class="flex items-center gap-4 text-gray-500">
-                            <i
-                              @click="openRoleDialog(member)"
-                              class="fas fa-pen cursor-pointer hover:text-blue-600"
-                            ></i>
-                      <el-switch
-  :model-value="member.status"
-  :active-value="'active'"
-  :inactive-value="'inactive'"
-  :loading="toggleLoadingMap[member.id]"
-  :disabled="toggleLoadingMap[member.id]"
-  @change="(val) => toggleAdminStatus(member, val)"
-/>
-
-
-
-                            <i class="fas fa-trash cursor-pointer text-red hover:text-red-600"></i>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
 
                   <el-dialog
                     v-model="showRoleDialog"
