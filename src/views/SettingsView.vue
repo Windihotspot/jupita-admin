@@ -331,7 +331,7 @@ const updateAdminRole = async () => {
     showRoleDialog.value = false
   } catch (err) {
     console.log('❌ Update role error', err)
-    roleUpdateError.value = err.response?.data?.message || 'Failed to update role'
+    roleUpdateError.value = err.response?.data?.data.error || 'Failed to update role'
   } finally {
     updatingRole.value = false
   }
@@ -493,6 +493,45 @@ const sendResetPasswordEmail = async () => {
 watch(searchQuery, (val) => {
   if (!val) selectedStatus.value = null
 })
+
+const toggleAdminStatus = async (member, newStatus) => {
+  toggleLoadingMap.value[member.id] = true
+
+  const payload = {
+    admin_id: member.id,
+    new_status: newStatus
+  }
+
+  try {
+    await ApiService.put('/update-admin-status', payload, {
+      headers: { Authorization: `Bearer ${auth.token}` }
+    })
+
+    // ✅ Only update the UI after success
+    member.status = newStatus
+
+    ElNotification({
+      type: 'success',
+      message:
+        newStatus === 'active'
+          ? 'Admin activated successfully'
+          : 'Admin deactivated successfully',
+      duration: 2500
+    })
+  } catch (err) {
+    ElNotification({
+      type: 'error',
+      message: err.response?.data?.data.message || 'Failed to update admin status'
+    })
+    // No need to revert, because UI never updated yet
+  } finally {
+    toggleLoadingMap.value[member.id] = false
+  }
+}
+
+
+
+
 </script>
 
 <template>
@@ -950,7 +989,17 @@ watch(searchQuery, (val) => {
                               @click="openRoleDialog(member)"
                               class="fas fa-pen cursor-pointer hover:text-blue-600"
                             ></i>
-                            <el-switch />
+                      <el-switch
+  :model-value="member.status"
+  :active-value="'active'"
+  :inactive-value="'inactive'"
+  :loading="toggleLoadingMap[member.id]"
+  :disabled="toggleLoadingMap[member.id]"
+  @change="(val) => toggleAdminStatus(member, val)"
+/>
+
+
+
                             <i class="fas fa-trash cursor-pointer text-red hover:text-red-600"></i>
                           </div>
                         </td>
