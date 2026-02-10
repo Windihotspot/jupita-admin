@@ -82,6 +82,51 @@ const newAdmin = ref({
   password: '',
   role: 'admin'
 })
+const deleteAdmin = async (member) => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to delete ${member.firstname} ${member.lastname}?`,
+      'Confirm Delete',
+      {
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+
+    toggleLoadingMap.value[member.id] = true
+
+    const payload = {
+      admin_id: member.id
+    }
+    console.log("delete payload:", payload)
+    await ApiService.post('/delete-admin-member', payload, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+
+    // ✅ Remove from UI after success
+    team.value = team.value.filter((a) => a.id !== member.id)
+
+    ElNotification({
+      type: 'success',
+      message: 'Admin deleted successfully',
+      duration: 2500
+    })
+  } catch (err) {
+    // ❌ Ignore cancel action
+    if (err !== 'cancel') {
+      ElNotification({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to delete admin'
+      })
+    }
+  } finally {
+    toggleLoadingMap.value[member.id] = false
+  }
+}
 
 // VALIDATION RULES
 const rules = {
@@ -1000,7 +1045,11 @@ const toggleAdminStatus = async (member, newStatus) => {
             :disabled="toggleLoadingMap[member.id]"
             @change="(val) => toggleAdminStatus(member, val)"
           />
-          <i class="fas fa-trash cursor-pointer text-red hover:text-red-600"></i>
+        <i
+  class="fas fa-trash cursor-pointer text-red-500 hover:text-red-600"
+  @click="deleteAdmin(member)"
+></i>
+
         </div>
       </td>
     </tr>
