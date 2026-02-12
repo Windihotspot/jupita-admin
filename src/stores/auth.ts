@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', {
     async login(payload: { email: string; password: string }) {
       this.loading = true
       this.error = null
-
+      console.log('login payload:', payload)
       try {
         const response = await ApiService.post('/login', payload)
         const res: AuthResponse = response.data
@@ -96,8 +96,8 @@ export const useAuthStore = defineStore('auth', {
 
         return true
       } catch (err: any) {
-        console.log("login error:", err)
-        this.error = err.response?.data?.data?.error || 'Login failed'
+        console.log("login error:", err.response?.data?.data?.message)
+        this.error = err.response?.data?.data?.message || 'Login failed'
         return false
       } finally {
         this.loading = false
